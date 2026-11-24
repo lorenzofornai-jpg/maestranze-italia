@@ -3,6 +3,7 @@ import { isValidCodiceFiscale, isValidMobilePhone, isValidPartitaIva, normalizeP
 
 export * from "./validators";
 export * from "./territory";
+export * from "./catalog";
 import { PROVINCE_CODES } from "./territory";
 
 /** Lato del mercato: DOMANDA (chi acquista) o OFFERTA (chi produce e vende). */
@@ -151,6 +152,7 @@ export interface SessionUser {
   status: AccountStatus;
   locale: Locale;
   mfaMethods: MfaMethod[];
+  isAdmin: boolean;
 }
 
 /**

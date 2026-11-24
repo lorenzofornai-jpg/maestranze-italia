@@ -1,4 +1,6 @@
 import { randomBytes } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { ed25519 } from "@noble/curves/ed25519.js";
 import { deviceMessages } from "@maestranze/shared";
 import { buildApp, SESSION_COOKIE } from "../src/app";
@@ -20,6 +22,7 @@ export async function setupApp() {
     SMTP_URL: "smtp://localhost:1025",
     MAIL_FROM: "test@maestranze.it",
     SMS_PROVIDER: "memory",
+    MEDIA_DIR: join(tmpdir(), "maestranze-test-media"),
     PUSH_PROVIDER: "memory",
     security,
   };
@@ -101,3 +104,50 @@ export async function pairPhone(t: TestApp, cookie: string) {
   phone.deviceId = res.json().deviceId;
   return phone;
 }
+
+/** Promuove un account a staff del portale. */
+export async function makeAdmin(t: TestApp, email: string) {
+  await t.pool.query("update accounts set is_admin = true where email = $1", [email]);
+}
+
+/** PNG di 1×1 pixel, valido. */
+export const TINY_PNG = Buffer.from(
+  "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==",
+  "base64",
+);
+
+/** Corpo multipart con un solo file, per i test di caricamento. */
+export function multipartBody(data: Buffer, filename = "foto.png", type = "image/png") {
+  const boundary = "----maestranze" + Math.random().toString(16).slice(2);
+  const payload = Buffer.concat([
+    Buffer.from(`--${boundary}\r\nContent-Disposition: form-data; name="file"; filename="${filename}"\r\nContent-Type: ${type}\r\n\r\n`),
+    data,
+    Buffer.from(`\r\n--${boundary}--\r\n`),
+  ]);
+  return { payload, headers: { "content-type": `multipart/form-data; boundary=${boundary}` } };
+}
+
+export const MAISON = {
+  name: "Sartoria Partenopea",
+  discipline: "TAILORING",
+  tagline: { it: "Giacche cucite a mano dal 1948", en: "Hand-sewn jackets since 1948" },
+  story: {
+    it: "Tre generazioni di sarti nel cuore di Chiaia. Ogni giacca richiede quaranta ore di lavoro e oltre cinquemila punti a mano, dalla spalla a camicia al taschino a barchetta.",
+    en: "Three generations of tailors in the heart of Chiaia. Every jacket takes forty hours of work and over five thousand hand stitches.",
+  },
+  foundedYear: 1948,
+  province: "NA",
+  city: "Napoli",
+  certifications: ["BOTTEGA_STORICA"],
+  b2bMinOrderCents: 50000,
+  leadTimeDays: 30,
+};
+
+export const PRODUCT = {
+  name: { it: "Giacca in lino blu notte", en: "Midnight blue linen jacket" },
+  description: { it: "Lino irlandese, spalla a camicia, tre bottoni stirati a due. Su misura.", en: "Irish linen, shirt shoulder." },
+  priceCents: 280000,
+  b2bPriceCents: 210000,
+  unit: "PIECE",
+  madeToOrder: true,
+};

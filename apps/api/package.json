@@ -9,16 +9,20 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file-if-exists=.env src/db/migrate.ts",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run",
+    "admin:grant": "tsx --env-file-if-exists=.env src/scripts/grant-admin.ts",
+    "db:seed": "tsx --env-file-if-exists=.env src/scripts/seed.ts"
   },
   "dependencies": {
     "@fastify/cookie": "^11.1.5",
     "@fastify/cors": "^11.4.3",
     "@fastify/helmet": "^13.2.0",
+    "@fastify/multipart": "^10.1.9",
     "@fastify/rate-limit": "^11.3.0",
+    "@fastify/static": "^10.1.12",
     "@maestranze/shared": "workspace:*",
-    "@node-rs/argon2": "^2.2.2",
     "@noble/curves": "^2.4.0",
+    "@node-rs/argon2": "^2.2.2",
     "drizzle-orm": "^0.45.4",
     "fastify": "^5.12.8",
     "nodemailer": "^7.0.0",

@@ -46,6 +46,7 @@ import {
 } from "../lib/crypto";
 import { ApiError, Errors } from "../lib/errors";
 import { renderEmail, texts, type Notifier } from "../lib/notifications";
+import { parseOrThrow } from "../lib/validation";
 
 export type Channel = "WEB" | "MOBILE";
 
@@ -65,18 +66,6 @@ export interface AuthDeps {
   config: Config;
   notifier: Notifier;
   now?: () => Date;
-}
-
-/** Converte gli errori di zod in { campo: chiave_di_traduzione }. */
-function parseOrThrow<T extends z.ZodType>(schema: T, input: unknown): z.output<T> {
-  const result = schema.safeParse(input);
-  if (result.success) return result.data;
-  const fields: Record<string, string> = {};
-  for (const issue of result.error.issues) {
-    const key = issue.path.join(".") || "_";
-    fields[key] ??= issue.message;
-  }
-  throw Errors.validation(fields);
 }
 
 export function maskPhone(phone: string): string {
@@ -580,6 +569,7 @@ export class AuthService {
       status: account.status,
       locale: account.locale === "en" ? "en" : "it",
       mfaMethods: await this.activeFactors(account.id),
+      isAdmin: account.isAdmin,
     };
   }
 

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
 import type { MfaMethod, SessionUser } from "@maestranze/shared";
@@ -81,6 +82,25 @@ export default function AreaPage() {
             <p className="lead italic" style={{ fontSize: 22 }}>
               {t(`area.next.${user.role}`)}
             </p>
+          </div>
+
+          <div className="area-cards">
+            {user.role === "MAKER" && (
+              <Link href={`/${locale}/area/maison`} className="area-card">
+                <span className="name">{t("area.maison.cta")}</span>
+                <span className="desc">{t("area.maison.cta.body")}</span>
+              </Link>
+            )}
+            <Link href={`/${locale}/area/ordini`} className="area-card">
+              <span className="name">{t("area.orders.cta")}</span>
+              <span className="desc">{t(`area.orders.cta.body.${user.role}`)}</span>
+            </Link>
+            {user.isAdmin && (
+              <Link href={`/${locale}/area/selezione`} className="area-card">
+                <span className="name">{t("area.selection.cta")}</span>
+                <span className="desc">{t("area.selection.cta.body")}</span>
+              </Link>
+            )}
           </div>
 
           <section className="panel">

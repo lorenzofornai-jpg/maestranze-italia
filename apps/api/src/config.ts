@@ -11,6 +11,7 @@ const envSchema = z.object({
   SMTP_URL: z.string().default("smtp://localhost:1025"),
   MAIL_FROM: z.string().default("Maestranze Italia <concierge@maestranze.it>"),
   SMS_PROVIDER: z.enum(["console", "memory"]).default("console"),
+  MEDIA_DIR: z.string().default("./uploads"),
   PUSH_PROVIDER: z.enum(["console", "memory", "expo"]).default("console"),
 });
 

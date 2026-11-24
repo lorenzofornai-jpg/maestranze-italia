@@ -25,10 +25,19 @@ export function LangSwitch({ tone = "ink" }: { tone?: "ink" | "paper" }) {
   );
 }
 
-export function Header({ overlay = false, signedIn = false }: { overlay?: boolean; signedIn?: boolean }) {
+export function Header({ overlay = false, signedIn = false, dark = false }: { overlay?: boolean; signedIn?: boolean; dark?: boolean }) {
   const locale = useLocale();
   const t = useT();
   const [scrolled, setScrolled] = useState(false);
+  const [session, setSession] = useState(signedIn);
+
+  // Sulle pagine pubbliche la testata scopre da sola se c'è una sessione aperta.
+  useEffect(() => {
+    if (signedIn) return;
+    fetch("/api/v1/me", { credentials: "same-origin" })
+      .then((r) => setSession(r.ok))
+      .catch(() => undefined);
+  }, [signedIn]);
 
   useEffect(() => {
     const on = () => setScrolled(window.scrollY > 40);
@@ -38,7 +47,7 @@ export function Header({ overlay = false, signedIn = false }: { overlay?: boolea
   }, []);
 
   return (
-    <header className={`site-header ${overlay ? "overlay" : ""} ${scrolled ? "scrolled" : ""}`}>
+    <header className={`site-header ${overlay ? "overlay" : ""} ${dark ? "dark" : ""} ${scrolled ? "scrolled" : ""}`}>
       <div className="wrap header-row">
         <nav className="header-nav left">
           <Link href={`/${locale}#arti`}>{t("nav.arts")}</Link>
@@ -48,8 +57,8 @@ export function Header({ overlay = false, signedIn = false }: { overlay?: boolea
         <Wordmark locale={locale} />
         <nav className="header-nav right">
           <LangSwitch />
-          <Link href={`/${locale}/${signedIn ? "area" : "accedi"}`} className="signin">
-            {t(signedIn ? "nav.area" : "nav.signin")}
+          <Link href={`/${locale}/${session ? "area" : "accedi"}`} className="signin">
+            {t(session ? "nav.area" : "nav.signin")}
           </Link>
         </nav>
       </div>

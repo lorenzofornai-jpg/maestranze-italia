@@ -1,3 +1,5 @@
+import { catalogEn, catalogIt, type CatalogKey } from "./i18n-catalog";
+
 /**
  * Testi dell'interfaccia in italiano e in inglese. La chiave è la stessa nelle due lingue:
  * il controllo dei tipi impedisce di dimenticare una traduzione.
@@ -237,9 +239,9 @@ const it = {
   "maker.company_required": "Per l'offerta serve una partita IVA.",
 } as const;
 
-export type MessageKey = keyof typeof it;
+export type MessageKey = keyof typeof it | CatalogKey;
 
-const en: Record<MessageKey, string> = {
+const en: Record<keyof typeof it, string> = {
   "nav.maisons": "The Maisons",
   "nav.arts": "The Arts",
   "nav.territories": "Territories",
@@ -467,12 +469,12 @@ const en: Record<MessageKey, string> = {
   "maker.company_required": "Supply profiles require a VAT number.",
 };
 
-export const dictionaries = { it, en } as const;
+export const dictionaries = { it: { ...it, ...catalogIt }, en: { ...en, ...catalogEn } } as const;
 export type Locale = keyof typeof dictionaries;
 export const isLocale = (v: string): v is Locale => v === "it" || v === "en";
 
 export function translate(locale: Locale, key: string, vars: Record<string, string | number> = {}): string {
   const dict = dictionaries[locale] as Record<string, string>;
-  const text = dict[key] ?? (it as Record<string, string>)[key] ?? key;
+  const text = dict[key] ?? (dictionaries.it as Record<string, string>)[key] ?? key;
   return text.replace(/\{(\w+)\}/g, (_, k) => String(vars[k] ?? `{${k}}`));
 }

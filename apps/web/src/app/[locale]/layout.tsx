@@ -7,6 +7,7 @@ import "@fontsource/jost/300.css";
 import "@fontsource/jost/400.css";
 import "../globals.css";
 import "../site.css";
+import "../catalog.css";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";

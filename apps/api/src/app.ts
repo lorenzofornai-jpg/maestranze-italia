@@ -1,7 +1,13 @@
 import cookie from "@fastify/cookie";
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
+import multipart from "@fastify/multipart";
 import rateLimit from "@fastify/rate-limit";
+import fastifyStatic from "@fastify/static";
+import { resolve } from "node:path";
+import { CatalogService } from "./catalog/service";
+import { DiskMediaStore, MAX_IMAGE_BYTES, type MediaStore } from "./lib/media";
+import { catalogRoutes } from "./routes/catalog";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { AuthService, type Channel, type IssuedSession, type RequestContext } from "./auth/service";
 import type { Config } from "./config";
@@ -18,7 +24,14 @@ declare module "fastify" {
   }
 }
 
-export async function buildApp(opts: { db: Db; config: Config; notifier: Notifier; now?: () => Date; logger?: boolean }) {
+export async function buildApp(opts: {
+  db: Db;
+  config: Config;
+  notifier: Notifier;
+  now?: () => Date;
+  logger?: boolean;
+  media?: MediaStore;
+}) {
   const { config } = opts;
   const app = Fastify({ logger: opts.logger ?? false, trustProxy: true, bodyLimit: 64 * 1024 });
   const auth = new AuthService(opts);
@@ -27,6 +40,11 @@ export async function buildApp(opts: { db: Db; config: Config; notifier: Notifie
   await app.register(helmet);
   await app.register(cors, { origin: [config.WEB_ORIGIN], credentials: true });
   await app.register(cookie);
+  await app.register(multipart, { limits: { fileSize: MAX_IMAGE_BYTES, files: 1 } });
+  const mediaDir = resolve(config.MEDIA_DIR);
+  await app.register(fastifyStatic, { root: mediaDir, prefix: "/media/", decorateReply: false, index: false, maxAge: "30d", immutable: true });
+  const media = opts.media ?? new DiskMediaStore(mediaDir);
+  const catalog = new CatalogService(opts.db, config, opts.notifier, opts.now);
   await app.register(rateLimit, {
     global: true,
     max: config.NODE_ENV === "test" ? 10_000 : 120,
@@ -85,7 +103,14 @@ export async function buildApp(opts: { db: Db; config: Config; notifier: Notifie
     req.auth = result;
   };
 
+  /** Sulle pagine pubbliche la sessione è facoltativa: serve solo a mostrare i prezzi riservati. */
+  const optionalSession = async (req: FastifyRequest) => {
+    const result = await auth.authenticate(tokenOf(req));
+    if (result) req.auth = result;
+  };
+
   app.get("/health", async () => ({ ok: true }));
+  catalogRoutes(app, catalog, media, { requireSession, optionalSession });
 
   // --- Registrazione e attivazione --------------------------------------------------------------
   app.post("/v1/auth/register", strict, async (req, reply) => {

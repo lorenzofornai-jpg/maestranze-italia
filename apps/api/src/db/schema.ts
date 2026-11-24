@@ -56,6 +56,8 @@ export const accounts = pgTable(
     city: text("city").notNull(),
     locale: text("locale").notNull().default("it"),
     consents: jsonb("consents").$type<{ terms: boolean; privacy: boolean; marketing: boolean; at: string }>().notNull(),
+    /** Staff del portale: selezione delle Maison, controversie. */
+    isAdmin: boolean("is_admin").notNull().default(false),
     failedLoginCount: integer("failed_login_count").notNull().default(0),
     lockedUntil: ts("locked_until"),
     createdAt: ts("created_at").notNull().defaultNow(),
@@ -219,6 +221,86 @@ export const auditEvents = pgTable(
   (t) => [index("audit_events_account_idx").on(t.accountId, t.createdAt)],
 );
 
+// =============================================================================================
+// Maison e catalogo
+// =============================================================================================
+
+/** Testo nelle due lingue: l'inglese è facoltativo e, se manca, si mostra l'italiano. */
+export type I18nText = { it: string; en?: string };
+
+export const discipline = pgEnum("discipline", ["FOOD", "BEVERAGE", "TAILORING", "SPORT", "CRAFTS"]);
+export const maisonStatus = pgEnum("maison_status", ["DRAFT", "SUBMITTED", "APPROVED", "REJECTED", "SUSPENDED"]);
+
+export const maisons = pgTable(
+  "maisons",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id")
+      .notNull()
+      .references(() => accounts.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: text("name").notNull(),
+    discipline: discipline("discipline").notNull(),
+    tagline: jsonb("tagline").$type<I18nText>().notNull(),
+    story: jsonb("story").$type<I18nText>().notNull(),
+    craft: jsonb("craft").$type<I18nText>(),
+    foundedYear: integer("founded_year"),
+    region: text("region").notNull(),
+    province: text("province").notNull(),
+    city: text("city").notNull(),
+    certifications: jsonb("certifications").$type<string[]>().notNull().default([]),
+    /** Condizioni per i clienti professionali. */
+    b2bMinOrderCents: integer("b2b_min_order_cents"),
+    leadTimeDays: integer("lead_time_days"),
+    coverImage: text("cover_image"),
+    /** Commissione del portale in punti base (1000 = 10%). */
+    commissionBps: integer("commission_bps").notNull().default(1000),
+    status: maisonStatus("status").notNull().default("DRAFT"),
+    reviewNote: text("review_note"),
+    submittedAt: ts("submitted_at"),
+    approvedAt: ts("approved_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("maisons_slug_uq").on(t.slug),
+    uniqueIndex("maisons_account_uq").on(t.accountId),
+    index("maisons_territory_idx").on(t.status, t.region, t.province),
+  ],
+);
+
+export const productUnit = pgEnum("product_unit", ["PIECE", "KG", "BOTTLE", "CASE", "METRE", "SET"]);
+
+export const products = pgTable(
+  "products",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    maisonId: uuid("maison_id")
+      .notNull()
+      .references(() => maisons.id, { onDelete: "cascade" }),
+    slug: text("slug").notNull(),
+    name: jsonb("name").$type<I18nText>().notNull(),
+    description: jsonb("description").$type<I18nText>().notNull(),
+    /** Prezzo al pubblico, IVA inclusa, in centesimi. */
+    priceCents: integer("price_cents").notNull(),
+    /** Prezzo riservato ai clienti con partita IVA (IVA esclusa); null = come al pubblico. */
+    b2bPriceCents: integer("b2b_price_cents"),
+    unit: productUnit("unit").notNull().default("PIECE"),
+    minQty: integer("min_qty").notNull().default(1),
+    /** null = disponibilità su richiesta / su commissione. */
+    stock: integer("stock"),
+    madeToOrder: boolean("made_to_order").notNull().default(false),
+    image: text("image"),
+    active: boolean("active").notNull().default(true),
+    position: integer("position").notNull().default(0),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [uniqueIndex("products_slug_uq").on(t.maisonId, t.slug), index("products_maison_idx").on(t.maisonId, t.position)],
+);
+
 export type Account = typeof accounts.$inferSelect;
+export type Maison = typeof maisons.$inferSelect;
+export type Product = typeof products.$inferSelect;
 export type AuthChallenge = typeof authChallenges.$inferSelect;
 export type Device = typeof devices.$inferSelect;
