@@ -1,6 +1,7 @@
 import { sql } from "drizzle-orm";
 import {
   boolean,
+  customType,
   index,
   integer,
   jsonb,
@@ -11,6 +12,9 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+
+/** Indice di ricerca full-text di PostgreSQL (italiano + inglese). */
+const tsvector = customType<{ data: string }>({ dataType: () => "tsvector" });
 
 const ts = (name: string) => timestamp(name, { withTimezone: true, mode: "date" });
 
@@ -256,6 +260,8 @@ export const maisons = pgTable(
     /** Commissione del portale in punti base (1000 = 10%). */
     commissionBps: integer("commission_bps").notNull().default(1000),
     status: maisonStatus("status").notNull().default("DRAFT"),
+    /** Calcolato dal servizio di ricerca su profilo, territorio e collezione. */
+    searchVector: tsvector("search_vector"),
     reviewNote: text("review_note"),
     submittedAt: ts("submitted_at"),
     approvedAt: ts("approved_at"),
@@ -266,6 +272,7 @@ export const maisons = pgTable(
     uniqueIndex("maisons_slug_uq").on(t.slug),
     uniqueIndex("maisons_account_uq").on(t.accountId),
     index("maisons_territory_idx").on(t.status, t.region, t.province),
+    index("maisons_search_idx").using("gin", t.searchVector),
   ],
 );
 

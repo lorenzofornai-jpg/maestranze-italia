@@ -4,6 +4,7 @@ import { Monogram } from "@/components/brand";
 import { Footer, Header } from "@/components/header";
 import { ARTS, HeroPlate } from "@/components/plate";
 import { Reveal } from "@/components/reveal";
+import { SearchBar } from "@/components/search-bar";
 import { isLocale, translate, type MessageKey } from "@/lib/i18n";
 
 const ROMAN = ["I", "II", "III", "IV", "V"];
@@ -94,11 +95,13 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             <div className="arts-grid">
               {ARTS.map((art, i) => (
                 <Reveal key={art} delay={i * 110} as="article" className="art">
-                  <div className={`swatch swatch-${art}`}>
-                    <span className="swatch-num">{ROMAN[i]}</span>
-                  </div>
-                  <h3 className="display">{t(`arts.${art}`)}</h3>
-                  <p className="italic">{t(`arts.${art}.material`)}</p>
+                  <Link href={`/${locale}/esplora?discipline=${art.toUpperCase()}`}>
+                    <div className={`swatch swatch-${art}`}>
+                      <span className="swatch-num">{ROMAN[i]}</span>
+                    </div>
+                    <h3 className="display">{t(`arts.${art}`)}</h3>
+                    <p className="italic">{t(`arts.${art}.material`)}</p>
+                  </Link>
                 </Reveal>
               ))}
             </div>
@@ -112,14 +115,19 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               <span className="eyebrow">{t("territories.eyebrow")}</span>
               <h2 className="display h2">{t("territories.title")}</h2>
               <p className="lead">{t("territories.body")}</p>
+              <div style={{ marginTop: 12 }}>
+                <SearchBar />
+              </div>
             </Reveal>
             <Reveal delay={150} className="regions">
               <ol>
                 {Object.entries(REGIONS).map(([region, provinces], i) => (
                   <li key={region}>
-                    <span className="region-n">{String(i + 1).padStart(2, "0")}</span>
-                    <span className="region-name">{region}</span>
-                    <span className="region-p">{provinces.map(([c]) => c).join(" · ")}</span>
+                    <Link href={`/${locale}/esplora?region=${encodeURIComponent(region)}`}>
+                      <span className="region-n">{String(i + 1).padStart(2, "0")}</span>
+                      <span className="region-name">{region}</span>
+                      <span className="region-p">{provinces.map(([c]) => c).join(" · ")}</span>
+                    </Link>
                   </li>
                 ))}
               </ol>

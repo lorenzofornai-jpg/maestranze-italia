@@ -23,6 +23,7 @@ export async function setupApp() {
     MAIL_FROM: "test@maestranze.it",
     SMS_PROVIDER: "memory",
     MEDIA_DIR: join(tmpdir(), "maestranze-test-media"),
+    AI_SEARCH: "off",
     PUSH_PROVIDER: "memory",
     security,
   };
@@ -151,3 +152,18 @@ export const PRODUCT = {
   unit: "PIECE",
   madeToOrder: true,
 };
+
+/** Crea e fa approvare una Maison completa (con un prodotto e la copertina). */
+export async function approveMaison(t: TestApp, overrides: Record<string, unknown> = {}) {
+  const { SESSION_COOKIE } = await import("../src/app");
+  const as = (c: string) => ({ cookies: { [SESSION_COOKIE]: c } });
+  const m = await activeAccount(t, { role: "MAKER", sector: String(overrides.discipline ?? "TAILORING") });
+  await t.app.inject({ method: "PUT", url: "/v1/me/maison", payload: { ...MAISON, ...overrides }, ...as(m.cookie) });
+  const { id: productId } = (await t.app.inject({ method: "POST", url: "/v1/me/products", payload: PRODUCT, ...as(m.cookie) })).json();
+  const up = multipartBody(TINY_PNG);
+  await t.app.inject({ method: "POST", url: "/v1/me/maison/cover", payload: up.payload, headers: up.headers, ...as(m.cookie) });
+  await t.app.inject({ method: "POST", url: "/v1/me/maison/submit", payload: {}, ...as(m.cookie) });
+  const { rows } = await t.pool.query("select id from maisons where account_id = (select id from accounts where email = $1)", [m.payload.email]);
+  await t.pool.query("update maisons set status = 'APPROVED', approved_at = now() where id = $1", [rows[0].id]);
+  return { maker: m, maisonId: rows[0].id as string, productId: productId as string };
+}

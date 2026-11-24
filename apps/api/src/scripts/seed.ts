@@ -13,6 +13,7 @@ import { createDb } from "../db/client";
 import { accounts, maisons, mfaFactors, products } from "../db/schema";
 import { hashPassword } from "../lib/crypto";
 import { DiskMediaStore, storeImage } from "../lib/media";
+import { SearchService } from "../search/service";
 
 type Kind = "food" | "beverage" | "tailoring" | "sport" | "crafts";
 interface SeedProduct {
@@ -276,6 +277,7 @@ async function main() {
     }
     console.log(`Maison: ${m.name} (${email})`);
   }
+  await new SearchService(db).reindexAll();
   console.log(`\nAccount dimostrativi — password ${PASSWORD}\n  staff@maestranze.it (staff)\n  chef@osteria.it (ristorante)`);
   await pool.end();
 }

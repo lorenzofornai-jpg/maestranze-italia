@@ -52,7 +52,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
         <nav className="header-nav left">
           <Link href={`/${locale}#arti`}>{t("nav.arts")}</Link>
           <Link href={`/${locale}#territori`}>{t("nav.territories")}</Link>
-          <Link href={`/${locale}#patto`}>{t("nav.maisons")}</Link>
+          <Link href={`/${locale}/esplora`}>{t("nav.maisons")}</Link>
         </nav>
         <Wordmark locale={locale} />
         <nav className="header-nav right">

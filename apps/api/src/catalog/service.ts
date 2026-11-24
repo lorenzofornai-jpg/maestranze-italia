@@ -88,6 +88,8 @@ export class CatalogService {
     private config: Config,
     private notifier: Notifier,
     private now: () => Date = () => new Date(),
+    /** Avvisato a ogni modifica di testi o collezione (per l'indice di ricerca). */
+    private onChange: (maisonId: string) => Promise<void> = async () => {},
   ) {}
 
   private async audit(accountId: string, type: string, meta?: Record<string, unknown>) {
@@ -154,8 +156,13 @@ export class CatalogService {
       if (existing.status === "SUSPENDED") throw Errors.forbidden();
       const slug = existing.status === "APPROVED" ? existing.slug : await this.uniqueSlug(data.name, "maison", existing.id);
       await this.db.update(maisons).set({ ...values, slug }).where(eq(maisons.id, existing.id));
+      await this.onChange(existing.id);
     } else {
-      await this.db.insert(maisons).values({ ...values, accountId: account.id, slug: await this.uniqueSlug(data.name, "maison") });
+      const [row] = await this.db
+        .insert(maisons)
+        .values({ ...values, accountId: account.id, slug: await this.uniqueSlug(data.name, "maison") })
+        .returning();
+      await this.onChange(row!.id);
     }
     return this.myMaison(account);
   }
@@ -188,6 +195,7 @@ export class CatalogService {
         .where(and(eq(products.id, productId), eq(products.maisonId, maison.id)))
         .returning();
       if (!row) throw Errors.notFound();
+      await this.onChange(maison.id);
       return { id: row.id };
     }
     const [{ n }] = (await this.db.select({ n: count() }).from(products).where(eq(products.maisonId, maison.id))) as [{ n: number }];
@@ -196,6 +204,7 @@ export class CatalogService {
       .insert(products)
       .values({ ...values, maisonId: maison.id, slug: await this.uniqueSlug(data.name.it, { maisonId: maison.id }), position: n })
       .returning();
+    await this.onChange(maison.id);
     return { id: row!.id };
   }
 
@@ -217,6 +226,7 @@ export class CatalogService {
       .where(and(eq(products.id, productId), eq(products.maisonId, maison.id)))
       .returning();
     if (!row) throw Errors.notFound();
+    await this.onChange(maison.id);
   }
 
   /** Candidatura alla selezione: serve un profilo completo e almeno un prodotto attivo. */

@@ -8,6 +8,8 @@ import { resolve } from "node:path";
 import { CatalogService } from "./catalog/service";
 import { DiskMediaStore, MAX_IMAGE_BYTES, type MediaStore } from "./lib/media";
 import { catalogRoutes } from "./routes/catalog";
+import { LlmInterpreter, RulesInterpreter, type Interpreter } from "./search/interpret";
+import { SearchService } from "./search/service";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
 import { AuthService, type Channel, type IssuedSession, type RequestContext } from "./auth/service";
 import type { Config } from "./config";
@@ -31,9 +33,10 @@ export async function buildApp(opts: {
   now?: () => Date;
   logger?: boolean;
   media?: MediaStore;
+  interpreter?: Interpreter;
 }) {
   const { config } = opts;
-  const app = Fastify({ logger: opts.logger ?? false, trustProxy: true, bodyLimit: 64 * 1024 });
+  const app = Fastify({ logger: opts.logger ?? process.env.DEBUG_API === "1", trustProxy: true, bodyLimit: 64 * 1024 });
   const auth = new AuthService(opts);
   const prod = config.NODE_ENV === "production";
 
@@ -44,7 +47,10 @@ export async function buildApp(opts: {
   const mediaDir = resolve(config.MEDIA_DIR);
   await app.register(fastifyStatic, { root: mediaDir, prefix: "/media/", decorateReply: false, index: false, maxAge: "30d", immutable: true });
   const media = opts.media ?? new DiskMediaStore(mediaDir);
-  const catalog = new CatalogService(opts.db, config, opts.notifier, opts.now);
+  const search = new SearchService(opts.db);
+  const catalog = new CatalogService(opts.db, config, opts.notifier, opts.now, (id) => search.reindex(id));
+  const useLlm = config.AI_SEARCH === "on" || (config.AI_SEARCH === "auto" && !!process.env.ANTHROPIC_API_KEY);
+  const interpreter = opts.interpreter ?? (useLlm ? new LlmInterpreter((m) => app.log.warn(m)) : new RulesInterpreter());
   await app.register(rateLimit, {
     global: true,
     max: config.NODE_ENV === "test" ? 10_000 : 120,
@@ -111,6 +117,15 @@ export async function buildApp(opts: {
 
   app.get("/health", async () => ({ ok: true }));
   catalogRoutes(app, catalog, media, { requireSession, optionalSession });
+
+  // --- Esplorazione e ricerca -------------------------------------------------------------------
+  app.get("/v1/maisons", async (req) => search.search(req.query));
+  app.get("/v1/territories", async () => ({ territories: await search.territories() }));
+  app.post("/v1/search/interpret", strict, async (req) => {
+    const q = (req.body as { query?: unknown } | undefined)?.query;
+    if (typeof q !== "string" || q.trim().length < 2) throw Errors.validation({ query: "search.query_required" });
+    return interpreter.interpret(q.trim().slice(0, 500));
+  });
 
   // --- Registrazione e attivazione --------------------------------------------------------------
   app.post("/v1/auth/register", strict, async (req, reply) => {
