@@ -9,3 +9,8 @@ const notifier = new LiveNotifier(config.SMTP_URL, config.MAIL_FROM, config.PUSH
 const app = await buildApp({ db, config, notifier, logger: config.NODE_ENV !== "production" });
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });
+
+// Rilascio automatico dei fondi per gli ordini spediti da oltre il termine senza segnalazioni.
+setInterval(() => {
+  app.orders.autoRelease().catch((err) => app.log.error(err));
+}, 60 * 60 * 1000).unref();

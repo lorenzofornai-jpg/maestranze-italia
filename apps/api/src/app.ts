@@ -8,6 +8,9 @@ import { resolve } from "node:path";
 import { CatalogService } from "./catalog/service";
 import { DiskMediaStore, MAX_IMAGE_BYTES, type MediaStore } from "./lib/media";
 import { catalogRoutes } from "./routes/catalog";
+import { orderRoutes } from "./routes/orders";
+import { SandboxPaymentProvider, type PaymentProvider } from "./orders/payments";
+import { OrderService } from "./orders/service";
 import { LlmInterpreter, RulesInterpreter, type Interpreter } from "./search/interpret";
 import { SearchService } from "./search/service";
 import Fastify, { type FastifyReply, type FastifyRequest } from "fastify";
@@ -21,6 +24,9 @@ import type { Notifier } from "./lib/notifications";
 export const SESSION_COOKIE = "mi_session";
 
 declare module "fastify" {
+  interface FastifyInstance {
+    orders: OrderService;
+  }
   interface FastifyRequest {
     auth?: { account: Account; session: { id: string; accountId: string; channel: Channel; createdAt: Date; deviceId: string | null } };
   }
@@ -34,6 +40,7 @@ export async function buildApp(opts: {
   logger?: boolean;
   media?: MediaStore;
   interpreter?: Interpreter;
+  payments?: PaymentProvider;
 }) {
   const { config } = opts;
   const app = Fastify({ logger: opts.logger ?? process.env.DEBUG_API === "1", trustProxy: true, bodyLimit: 64 * 1024 });
@@ -117,6 +124,9 @@ export async function buildApp(opts: {
 
   app.get("/health", async () => ({ ok: true }));
   catalogRoutes(app, catalog, media, { requireSession, optionalSession });
+  const orderService = new OrderService(opts.db, config, opts.notifier, auth, opts.payments ?? new SandboxPaymentProvider(), opts.now);
+  orderRoutes(app, orderService, { requireSession, ctx, channelOf, strict });
+  app.decorate("orders", orderService);
 
   // --- Esplorazione e ricerca -------------------------------------------------------------------
   app.get("/v1/maisons", async (req) => search.search(req.query));

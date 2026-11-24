@@ -58,6 +58,7 @@ export function toPublicProduct(p: Product, viewer?: Account | null): PublicProd
     minQty: p.minQty,
     available: p.madeToOrder || p.stock == null || p.stock > 0,
     madeToOrder: p.madeToOrder,
+    vatRateBps: p.vatRateBps,
     image: p.image,
   };
 }
@@ -186,6 +187,7 @@ export class CatalogService {
       stock: data.madeToOrder ? null : (data.stock ?? null),
       madeToOrder: data.madeToOrder,
       active: data.active,
+      vatRateBps: data.vatRateBps,
       updatedAt: this.now(),
     };
     if (productId) {

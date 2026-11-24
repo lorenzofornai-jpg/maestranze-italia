@@ -7,6 +7,7 @@ import { buildApp, SESSION_COOKIE } from "../src/app";
 import { security, type Config } from "../src/config";
 import { createDb } from "../src/db/client";
 import { MemoryNotifier } from "../src/lib/notifications";
+import { SandboxPaymentProvider } from "../src/orders/payments";
 
 const TEST_DB = process.env.TEST_DATABASE_URL ?? "postgres://maestranze:maestranze@localhost:5432/maestranze_test";
 
@@ -29,12 +30,13 @@ export async function setupApp() {
   };
   const { db, pool } = createDb(TEST_DB);
   await pool.query(
-    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events cascade",
+    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries cascade",
   );
   const notifier = new MemoryNotifier();
   const clock = { offsetMs: 0 };
-  const app = await buildApp({ db, config, notifier, now: () => new Date(Date.now() + clock.offsetMs) });
-  return { app, notifier, clock, pool, close: async () => (await app.close(), await pool.end()) };
+  const payments = new SandboxPaymentProvider();
+  const app = await buildApp({ db, config, notifier, payments, now: () => new Date(Date.now() + clock.offsetMs) });
+  return { app, notifier, clock, pool, payments, close: async () => (await app.close(), await pool.end()) };
 }
 
 export type TestApp = Awaited<ReturnType<typeof setupApp>>;

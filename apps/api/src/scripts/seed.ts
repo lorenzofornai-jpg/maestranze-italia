@@ -271,6 +271,8 @@ async function main() {
         minQty: p.minQty ?? 1,
         stock: p.madeToOrder ? null : (p.stock ?? null),
         madeToOrder: p.madeToOrder ?? false,
+        // Formaggi, olio e alimentari di base al 4%, il resto al 22%.
+        vatRateBps: m.kind === "food" ? 400 : 2200,
         image: await img(`${m.kind}-product-${(j % 3) + 1}.jpg`),
         position: j,
       });

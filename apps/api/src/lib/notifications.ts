@@ -119,6 +119,10 @@ const T = {
     smsEnroll: (code: string) => `Maestranze Italia: il codice per confermare il tuo cellulare è ${code}. Valido 5 minuti.`,
     pushTitle: "Richiesta di accesso",
     pushBody: "Conferma l'accesso a Maestranze Italia dal web.",
+    smsPay: (code: string, amount: string, payee: string) =>
+      `Maestranze Italia: codice ${code} per autorizzare il pagamento di ${amount} a ${payee}. Valido 5 minuti. Se non sei tu, non usarlo.`,
+    pushPayTitle: "Autorizza il pagamento",
+    pushPayBody: (amount: string, payee: string) => `${amount} a ${payee}. Conferma con impronta o volto.`,
   },
   en: {
     activationSubject: "Welcome to Maestranze Italia — confirm your address",
@@ -142,6 +146,10 @@ const T = {
     smsEnroll: (code: string) => `Maestranze Italia: the code to confirm your mobile number is ${code}. Valid for 5 minutes.`,
     pushTitle: "Sign-in request",
     pushBody: "Confirm your sign-in to Maestranze Italia on the web.",
+    smsPay: (code: string, amount: string, payee: string) =>
+      `Maestranze Italia: code ${code} to authorise a payment of ${amount} to ${payee}. Valid 5 minutes. If this isn't you, do not use it.`,
+    pushPayTitle: "Authorise the payment",
+    pushPayBody: (amount: string, payee: string) => `${amount} to ${payee}. Confirm with fingerprint or face.`,
   },
 } as const;
 

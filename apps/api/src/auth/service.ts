@@ -3,6 +3,7 @@ import QRCode from "qrcode";
 import { z } from "zod";
 import {
   deviceMessages,
+  formatEuro,
   loginSchema,
   otpSchema,
   pairingUri,
@@ -49,6 +50,7 @@ import { renderEmail, texts, type Notifier } from "../lib/notifications";
 import { parseOrThrow } from "../lib/validation";
 
 export type Channel = "WEB" | "MOBILE";
+export type ChallengePurpose = "LOGIN" | "TRANSACTION";
 
 export interface RequestContext {
   ip?: string;
@@ -275,11 +277,22 @@ export class AuthService {
     };
   }
 
-  private async loadChallenge(loginToken: unknown): Promise<{ challenge: AuthChallenge; account: Account }> {
+  /**
+   * Carica una sfida attiva. Il tipo è sempre verificato: una sfida di pagamento non apre mai una
+   * sessione, e una sfida di accesso non autorizza mai un pagamento. Quella di pagamento deve inoltre
+   * appartenere all'account della sessione che la conferma.
+   */
+  private async loadChallenge(
+    loginToken: unknown,
+    purpose: ChallengePurpose = "LOGIN",
+    accountId?: string,
+  ): Promise<{ challenge: AuthChallenge; account: Account }> {
     if (typeof loginToken !== "string" || loginToken.length > 100) throw Errors.challengeExpired();
     const challenge = await this.db.query.authChallenges.findFirst({ where: eq(authChallenges.tokenHash, sha256(loginToken)) });
     if (
       !challenge ||
+      challenge.purpose !== purpose ||
+      (purpose === "TRANSACTION" && challenge.accountId !== accountId) ||
       challenge.stage !== "PASSWORD_OK" ||
       challenge.expiresAt <= this.now() ||
       challenge.failedAttempts >= this.sec.challengeMaxAttempts
@@ -292,8 +305,12 @@ export class AuthService {
   }
 
   /** Invia (o reinvia) il codice OTP via SMS al cellulare dell'account. */
-  async sendSmsOtp(loginToken: unknown): Promise<{ maskedPhone: string; expiresAt: string }> {
-    const { challenge, account } = await this.loadChallenge(loginToken);
+  async sendSmsOtp(
+    loginToken: unknown,
+    purpose: ChallengePurpose = "LOGIN",
+    accountId?: string,
+  ): Promise<{ maskedPhone: string; expiresAt: string }> {
+    const { challenge, account } = await this.loadChallenge(loginToken, purpose, accountId);
     const methods = challenge.enrollment ? ["SMS"] : await this.activeFactors(account.id);
     if (!methods.includes("SMS")) throw Errors.methodNotAvailable();
 
@@ -318,7 +335,12 @@ export class AuthService {
       .where(eq(authChallenges.id, challenge.id));
 
     const t = texts(account.locale);
-    await this.notifier.sms({ to: account.phone, text: challenge.enrollment ? t.smsEnroll(code) : t.smsOtp(code), code });
+    const text = challenge.purpose === "TRANSACTION"
+      ? t.smsPay(code, formatEuro(Number(challenge.details?.amountCents ?? 0), account.locale), String(challenge.details?.payee ?? ""))
+      : challenge.enrollment
+        ? t.smsEnroll(code)
+        : t.smsOtp(code);
+    await this.notifier.sms({ to: account.phone, text, code });
     return { maskedPhone: maskPhone(account.phone), expiresAt: otpExpiresAt.toISOString() };
   }
 
@@ -332,15 +354,14 @@ export class AuthService {
     throw Errors.invalidCode(Math.max(0, this.sec.challengeMaxAttempts - attempts));
   }
 
-  /** Verifica il codice SMS o TOTP e, se corretto, apre la sessione. */
-  async verifyMfa(
-    input: { loginToken?: unknown; method?: unknown; code?: unknown },
-    ctx: RequestContext = {},
-  ): Promise<IssuedSession> {
-    const { challenge, account } = await this.loadChallenge(input.loginToken);
-    const method = z.enum(["SMS", "TOTP"]).safeParse(input.method);
+  /**
+   * Verifica il codice (SMS legato alla sfida, oppure TOTP non riutilizzabile) e consuma la sfida in
+   * modo atomico: un codice vale una volta sola.
+   */
+  private async checkCode(challenge: AuthChallenge, account: Account, methodInput: unknown, codeInput: unknown): Promise<"SMS" | "TOTP"> {
+    const method = z.enum(["SMS", "TOTP"]).safeParse(methodInput);
     if (!method.success) throw Errors.methodNotAvailable();
-    const code = otpSchema.safeParse(input.code);
+    const code = otpSchema.safeParse(codeInput);
     if (!code.success) return this.failAttempt(challenge);
 
     const methods = challenge.enrollment ? ["SMS"] : await this.activeFactors(account.id);
@@ -363,13 +384,22 @@ export class AuthService {
       await this.db.update(mfaFactors).set({ totpLastStep: step, lastUsedAt: this.now() }).where(eq(mfaFactors.id, factor.id));
     }
 
-    // Consuma la sfida in modo atomico: un codice vale una volta sola.
     const [done] = await this.db
       .update(authChallenges)
       .set({ stage: "COMPLETED", completedAt: this.now() })
       .where(and(eq(authChallenges.id, challenge.id), eq(authChallenges.stage, "PASSWORD_OK")))
       .returning();
     if (!done) throw Errors.challengeExpired();
+    return method.data;
+  }
+
+  /** Verifica il codice SMS o TOTP e, se corretto, apre la sessione. */
+  async verifyMfa(
+    input: { loginToken?: unknown; method?: unknown; code?: unknown },
+    ctx: RequestContext = {},
+  ): Promise<IssuedSession> {
+    const { challenge, account } = await this.loadChallenge(input.loginToken, "LOGIN");
+    const method = { data: await this.checkCode(challenge, account, input.method, input.code) };
 
     let current = account;
     if (challenge.enrollment) {
@@ -395,8 +425,12 @@ export class AuthService {
 
   // --- Approvazione dall'app (notifica push) ---------------------------------------------------
 
-  async startPush(loginToken: unknown): Promise<{ status: "PENDING"; devices: number }> {
-    const { challenge, account } = await this.loadChallenge(loginToken);
+  async startPush(
+    loginToken: unknown,
+    purpose: ChallengePurpose = "LOGIN",
+    accountId?: string,
+  ): Promise<{ status: "PENDING"; devices: number }> {
+    const { challenge, account } = await this.loadChallenge(loginToken, purpose, accountId);
     if (challenge.enrollment) throw Errors.methodNotAvailable();
     const active = await this.db.query.devices.findMany({ where: and(eq(devices.accountId, account.id), isNull(devices.revokedAt)) });
     if (active.length === 0) throw Errors.methodNotAvailable();
@@ -409,7 +443,15 @@ export class AuthService {
     const t = texts(account.locale);
     for (const d of active) {
       if (d.pushToken) {
-        await this.notifier.push({ to: d.pushToken, title: t.pushTitle, body: t.pushBody, data: { type: "APPROVAL", challengeId: challenge.id } });
+        const pay = challenge.purpose === "TRANSACTION";
+        await this.notifier.push({
+          to: d.pushToken,
+          title: pay ? t.pushPayTitle : t.pushTitle,
+          body: pay
+            ? t.pushPayBody(formatEuro(Number(challenge.details?.amountCents ?? 0), account.locale), String(challenge.details?.payee ?? ""))
+            : t.pushBody,
+          data: { type: "APPROVAL", challengeId: challenge.id },
+        });
       }
     }
     return { status: "PENDING", devices: active.length };
@@ -422,7 +464,9 @@ export class AuthService {
   ): Promise<{ status: "PENDING" | "DENIED" | "EXPIRED" } | { status: "APPROVED"; session: IssuedSession }> {
     if (typeof loginToken !== "string") return { status: "EXPIRED" };
     const challenge = await this.db.query.authChallenges.findFirst({ where: eq(authChallenges.tokenHash, sha256(loginToken)) });
-    if (!challenge || challenge.expiresAt <= this.now() || challenge.stage === "COMPLETED") return { status: "EXPIRED" };
+    if (!challenge || challenge.purpose !== "LOGIN" || challenge.expiresAt <= this.now() || challenge.stage === "COMPLETED") {
+      return { status: "EXPIRED" };
+    }
     if (challenge.pushStatus === "DENIED" || challenge.stage === "DENIED") return { status: "DENIED" };
     if (challenge.pushStatus !== "APPROVED") return { status: "PENDING" };
 
@@ -436,6 +480,59 @@ export class AuthService {
     if (!account) return { status: "EXPIRED" };
     await this.audit(account.id, "login.success", ctx, { method: "MOBILE_APP", channel: challenge.channel });
     return { status: "APPROVED", session: await this.issueSession(account, challenge.channel, "MOBILE_APP", challenge.pushDeviceId, ctx) };
+  }
+
+  // --- Autorizzazione dei pagamenti (SCA con dynamic linking) ---------------------------------
+
+  /**
+   * Crea la sfida per autorizzare un pagamento. Importo e beneficiario fanno parte della sfida e
+   * compaiono nell'SMS e sull'app: il codice autorizza solo quel pagamento.
+   */
+  async createTransactionChallenge(
+    account: Account,
+    channel: Channel,
+    details: { orderNumber: string; amountCents: number; payee: string },
+    ctx: RequestContext = {},
+  ) {
+    const authToken = randomToken();
+    const expiresAt = this.after(this.sec.challengeTtlMs);
+    const [row] = await this.db
+      .insert(authChallenges)
+      .values({ accountId: account.id, tokenHash: sha256(authToken), purpose: "TRANSACTION", details, channel, ip: ctx.ip, userAgent: ctx.userAgent, expiresAt })
+      .returning();
+    return {
+      challengeId: row!.id,
+      authToken,
+      methods: await this.activeFactors(account.id),
+      maskedPhone: maskPhone(account.phone),
+      expiresAt: expiresAt.toISOString(),
+    };
+  }
+
+  /** Codice SMS o TOTP per un pagamento: restituisce l'id della sfida completata. */
+  async verifyTransaction(input: { authToken?: unknown; method?: unknown; code?: unknown }, accountId: string, ctx: RequestContext = {}) {
+    const { challenge, account } = await this.loadChallenge(input.authToken, "TRANSACTION", accountId);
+    const method = await this.checkCode(challenge, account, input.method, input.code);
+    await this.audit(account.id, "payment.authorized", ctx, { method, ...challenge.details });
+    return challenge.id;
+  }
+
+  /** Esito dell'approvazione dall'app per un pagamento. */
+  async pollTransaction(authToken: unknown, accountId: string): Promise<{ status: "PENDING" | "DENIED" | "EXPIRED" } | { status: "APPROVED"; challengeId: string }> {
+    if (typeof authToken !== "string") return { status: "EXPIRED" };
+    const challenge = await this.db.query.authChallenges.findFirst({ where: eq(authChallenges.tokenHash, sha256(authToken)) });
+    if (!challenge || challenge.purpose !== "TRANSACTION" || challenge.accountId !== accountId) return { status: "EXPIRED" };
+    if (challenge.expiresAt <= this.now() || challenge.stage === "COMPLETED") return { status: "EXPIRED" };
+    if (challenge.pushStatus === "DENIED" || challenge.stage === "DENIED") return { status: "DENIED" };
+    if (challenge.pushStatus !== "APPROVED") return { status: "PENDING" };
+    const [done] = await this.db
+      .update(authChallenges)
+      .set({ stage: "COMPLETED", completedAt: this.now() })
+      .where(and(eq(authChallenges.id, challenge.id), eq(authChallenges.stage, "PASSWORD_OK")))
+      .returning();
+    if (!done) return { status: "EXPIRED" };
+    await this.audit(accountId, "payment.authorized", {}, { method: "MOBILE_APP", ...challenge.details });
+    return { status: "APPROVED", challengeId: challenge.id };
   }
 
   private async loadDevice(deviceId: unknown) {

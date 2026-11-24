@@ -26,6 +26,9 @@ export const CERTIFICATIONS = [
 
 export type I18nText = { it: string; en?: string };
 
+/** Aliquote IVA italiane in punti base. Alimentari 4/10%, la maggior parte dei beni 22%. */
+export const VAT_RATES = [400, 500, 1000, 2200] as const;
+
 /** Testo nella lingua richiesta, con l'italiano come riserva. */
 export const pick = (text: I18nText | null | undefined, locale: string): string =>
   !text ? "" : locale === "en" && text.en?.trim() ? text.en : text.it;
@@ -87,6 +90,10 @@ export const productSchema = z
     stock: z.coerce.number().int().min(0).max(1_000_000).optional().nullable(),
     madeToOrder: z.boolean().default(false),
     active: z.boolean().default(true),
+    vatRateBps: z.coerce
+      .number()
+      .refine((v) => (VAT_RATES as readonly number[]).includes(v), "vat_rate.invalid")
+      .default(2200),
   })
   .refine((p) => p.b2bPriceCents == null || p.b2bPriceCents <= p.priceCents, {
     path: ["b2bPriceCents"],
@@ -106,6 +113,7 @@ export interface PublicProduct {
   minQty: number;
   available: boolean;
   madeToOrder: boolean;
+  vatRateBps: number;
   image: string | null;
 }
 

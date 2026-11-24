@@ -297,6 +297,8 @@ export const products = pgTable(
     /** null = disponibilità su richiesta / su commissione. */
     stock: integer("stock"),
     madeToOrder: boolean("made_to_order").notNull().default(false),
+    /** Aliquota IVA in punti base: 400 (4%), 500, 1000, 2200. */
+    vatRateBps: integer("vat_rate_bps").notNull().default(2200),
     image: text("image"),
     active: boolean("active").notNull().default(true),
     position: integer("position").notNull().default(0),
@@ -305,6 +307,128 @@ export const products = pgTable(
   },
   (t) => [uniqueIndex("products_slug_uq").on(t.maisonId, t.slug), index("products_maison_idx").on(t.maisonId, t.position)],
 );
+
+// =============================================================================================
+// Ordini, pagamenti in custodia, movimenti
+// =============================================================================================
+
+export const orderStatus = pgEnum("order_status", [
+  "AWAITING_AUTHORIZATION", // creato, il cliente deve autorizzare il pagamento (SCA)
+  "PAID", // fondi incassati e in custodia, la Maison deve accettare
+  "ACCEPTED", // la Maison prepara l'ordine
+  "SHIPPED",
+  "DELIVERED", // il cliente ha confermato: i fondi vengono rilasciati
+  "COMPLETED", // accredito alla Maison eseguito
+  "DISPUTED", // il cliente ha segnalato un problema: decide lo staff
+  "CANCELLED", // annullato prima del pagamento o rifiutato dalla Maison (con rimborso)
+  "REFUNDED", // rimborsato dopo una controversia
+]);
+
+export type ShippingAddress = {
+  name: string;
+  street: string;
+  zip: string;
+  city: string;
+  province: string;
+  country: string;
+  phone: string;
+  notes?: string;
+};
+
+export const orders = pgTable(
+  "orders",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    number: text("number").notNull(),
+    buyerAccountId: uuid("buyer_account_id")
+      .notNull()
+      .references(() => accounts.id),
+    maisonId: uuid("maison_id")
+      .notNull()
+      .references(() => maisons.id),
+    status: orderStatus("status").notNull().default("AWAITING_AUTHORIZATION"),
+    /** Ordine professionale: prezzi riservati, netti + IVA, fattura alla partita IVA. */
+    professional: boolean("professional").notNull(),
+    subtotalCents: integer("subtotal_cents").notNull(),
+    vatCents: integer("vat_cents").notNull(),
+    shippingCents: integer("shipping_cents").notNull().default(0),
+    totalCents: integer("total_cents").notNull(),
+    commissionBps: integer("commission_bps").notNull(),
+    commissionCents: integer("commission_cents").notNull(),
+    payoutCents: integer("payout_cents").notNull(),
+    shippingAddress: jsonb("shipping_address").$type<ShippingAddress>().notNull(),
+    note: text("note"),
+    carrier: text("carrier"),
+    trackingCode: text("tracking_code"),
+    authChallengeId: uuid("auth_challenge_id"),
+    paymentProvider: text("payment_provider"),
+    paymentRef: text("payment_ref"),
+    paidAt: ts("paid_at"),
+    shippedAt: ts("shipped_at"),
+    deliveredAt: ts("delivered_at"),
+    completedAt: ts("completed_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("orders_number_uq").on(t.number),
+    index("orders_buyer_idx").on(t.buyerAccountId, t.createdAt),
+    index("orders_maison_idx").on(t.maisonId, t.createdAt),
+    index("orders_status_idx").on(t.status, t.shippedAt),
+  ],
+);
+
+export const orderItems = pgTable("order_items", {
+  id: uuid("id").primaryKey().defaultRandom(),
+  orderId: uuid("order_id")
+    .notNull()
+    .references(() => orders.id, { onDelete: "cascade" }),
+  productId: uuid("product_id").references(() => products.id, { onDelete: "set null" }),
+  name: jsonb("name").$type<I18nText>().notNull(),
+  unit: productUnit("unit").notNull(),
+  qty: integer("qty").notNull(),
+  /** Prezzo unitario netto (IVA esclusa) e aliquota al momento dell'ordine. */
+  unitNetCents: integer("unit_net_cents").notNull(),
+  vatRateBps: integer("vat_rate_bps").notNull(),
+  lineNetCents: integer("line_net_cents").notNull(),
+  lineVatCents: integer("line_vat_cents").notNull(),
+});
+
+/** Cronologia visibile a cliente e Maison. */
+export const orderEvents = pgTable(
+  "order_events",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id, { onDelete: "cascade" }),
+    status: orderStatus("status").notNull(),
+    actor: text("actor").notNull(), // BUYER | MAKER | STAFF | SYSTEM
+    note: text("note"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("order_events_order_idx").on(t.orderId, t.createdAt)],
+);
+
+/** Registro contabile dei movimenti di denaro: incasso, commissione, accredito, rimborso. */
+export const ledgerEntries = pgTable(
+  "ledger_entries",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    orderId: uuid("order_id")
+      .notNull()
+      .references(() => orders.id),
+    kind: text("kind").notNull(), // CHARGE | COMMISSION | PAYOUT | REFUND
+    amountCents: integer("amount_cents").notNull(),
+    provider: text("provider").notNull(),
+    providerRef: text("provider_ref"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("ledger_order_idx").on(t.orderId)],
+);
+
+export type Order = typeof orders.$inferSelect;
+export type OrderItem = typeof orderItems.$inferSelect;
 
 export type Account = typeof accounts.$inferSelect;
 export type Maison = typeof maisons.$inferSelect;
