@@ -1,0 +1,18 @@
+{
+  "name": "maestranze-italia",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Maestranze Italia — il portale del saper fare italiano",
+  "packageManager": "pnpm@10.28.0",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev:api": "pnpm --filter @maestranze/api dev",
+    "dev:web": "pnpm --filter @maestranze/web dev",
+    "dev:mobile": "pnpm --filter @maestranze/mobile start",
+    "db:migrate": "pnpm --filter @maestranze/api db:migrate",
+    "test": "pnpm -r --if-present test",
+    "typecheck": "pnpm -r --if-present typecheck"
+  }
+}

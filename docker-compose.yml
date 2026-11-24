@@ -1,0 +1,22 @@
+# Servizi di sviluppo locale: database e casella di posta di prova.
+services:
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_USER: maestranze
+      POSTGRES_PASSWORD: maestranze
+      POSTGRES_DB: maestranze
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+
+  mailpit:
+    # Intercetta le email di attivazione: interfaccia su http://localhost:8025
+    image: axllent/mailpit:v1.21
+    ports:
+      - "1025:1025"
+      - "8025:8025"
+
+volumes:
+  pgdata:
