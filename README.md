@@ -3,15 +3,22 @@
 *Il portale del saper fare italiano.* Le Maison del Made in Italy (food, beverage, sartoria, sport, artigianato)
 incontrano ristoratori, albergatori, aziende e intenditori. Esclusivo, editoriale, sicuro come una banca.
 
-Interfaccia bilingue **IT | EN**. Architettura e sicurezza: [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md).
+Interfaccia bilingue **IT | EN**. Architettura e sicurezza: [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md) · App sul telefono: [`docs/TEST-SU-TELEFONO.md`](docs/TEST-SU-TELEFONO.md).
+
+## Cosa c'è
+
+- **Account** di domanda e di offerta, attivazione via email, doppia autenticazione «come in banca»: SMS, app di autenticazione o conferma biometrica dall'app.
+- **Maison**: profilo editoriale, collezione, candidatura e selezione dello staff, prezzi riservati ai professionisti.
+- **Esplora**: territori (regione → provincia → comune), Arti, ricerca in linguaggio naturale.
+- **Ordini**: cassa, autorizzazione forte del pagamento con importo e beneficiario, fondi in custodia, accredito alla Maison al netto della commissione, rimborsi e controversie.
 
 ## Struttura
 
 ```
-apps/api       Fastify + Drizzle + PostgreSQL — identità, 2FA, dispositivi, sessioni
-apps/web       Next.js — sito editoriale, registrazione, accesso, area riservata
-apps/mobile    Expo / React Native — chiave biometrica, accesso diretto, approvazioni
-packages/shared  schemi e validatori comuni (P.IVA, codice fiscale, province)
+apps/api         Fastify + Drizzle + PostgreSQL — identità e 2FA, catalogo, ricerca, ordini, pagamenti, notifiche
+apps/web         Next.js — sito editoriale, esplorazione, pagine Maison, cassa, area riservata, selezione
+apps/mobile      Expo / React Native — chiave biometrica, accesso diretto, approvazione di accessi e pagamenti
+packages/shared  schemi, validatori italiani, territori, calcolo degli importi
 ```
 
 ## Avvio in locale
@@ -22,6 +29,8 @@ docker compose up -d                  # PostgreSQL + Mailpit (email su http://lo
 cp apps/api/.env.example apps/api/.env
 # imposta DATA_ENCRYPTION_KEY con: openssl rand -base64 32
 pnpm db:migrate
+pnpm --filter @maestranze/api db:seed   # 8 Maison dimostrative, staff@maestranze.it e chef@osteria.it (password Maestranze!2026)
+pnpm --filter @maestranze/api admin:grant tua@email.it   # nomina staff un account
 pnpm dev:api                          # http://localhost:4000
 pnpm dev:web                          # http://localhost:3000
 pnpm dev:mobile                       # Expo (imposta extra.apiUrl in apps/mobile/app.json con l'IP del computer)
@@ -32,7 +41,7 @@ In sviluppo gli SMS e le notifiche push si leggono nel log dell'API; i link dell
 ## Test
 
 ```bash
-pnpm test        # 29 test: validatori + flussi completi di registrazione, 2FA, app, recupero password
+pnpm test        # 63 test: accesso e 2FA, catalogo e selezione, ricerca, ordini e pagamenti, canali SMS/push
 pnpm typecheck
 ```
 

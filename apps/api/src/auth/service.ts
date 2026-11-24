@@ -340,7 +340,11 @@ export class AuthService {
       : challenge.enrollment
         ? t.smsEnroll(code)
         : t.smsOtp(code);
-    await this.notifier.sms({ to: account.phone, text, code });
+    try {
+      await this.notifier.sms({ to: account.phone, text, code });
+    } catch {
+      throw new ApiError(502, "SMS_DELIVERY_FAILED");
+    }
     return { maskedPhone: maskPhone(account.phone), expiresAt: otpExpiresAt.toISOString() };
   }
 

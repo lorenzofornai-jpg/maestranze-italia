@@ -1,4 +1,5 @@
 import nodemailer from "nodemailer";
+import type { PushSender, SmsSender } from "./channels";
 import type { Locale } from "@maestranze/shared";
 
 export interface EmailMessage {
@@ -52,16 +53,14 @@ export class MemoryNotifier implements Notifier {
   }
 }
 
-/**
- * Notifiche reali: email via SMTP (Mailpit in sviluppo), SMS e push sul log finché non si collega
- * un fornitore (Skebby/Twilio per gli SMS, Expo Push per le notifiche dell'app).
- */
+/** Notifiche reali: email via SMTP (Mailpit in sviluppo), SMS e push tramite gli adattatori configurati. */
 export class LiveNotifier implements Notifier {
   private transport;
   constructor(
     smtpUrl: string,
     private from: string,
-    private pushProvider: "console" | "memory" | "expo",
+    private smsSender: SmsSender,
+    private pushSender: PushSender,
     private log: (msg: string) => void,
   ) {
     this.transport = nodemailer.createTransport(smtpUrl);
@@ -71,26 +70,17 @@ export class LiveNotifier implements Notifier {
     try {
       await this.transport.sendMail({ from: this.from, to: msg.to, subject: msg.subject, text: msg.text, html: msg.html });
     } catch (err) {
-      this.log(`[email] invio non riuscito a ${msg.to}: ${(err as Error).message}`);
+      this.log(`[email] invio non riuscito: ${(err as Error).message}`);
     }
-    if (msg.actionUrl) this.log(`[email] ${msg.to} → ${msg.actionUrl}`);
+    if (msg.actionUrl && process.env.NODE_ENV !== "production") this.log(`[email] ${msg.to} → ${msg.actionUrl}`);
   }
 
   async sms(msg: SmsMessage) {
-    // Punto d'aggancio del fornitore SMS (Skebby, Twilio, Vonage…).
-    this.log(`[sms] ${msg.to}: ${msg.text}`);
+    await this.smsSender.send(msg);
   }
 
   async push(msg: PushMessage) {
-    if (this.pushProvider !== "expo") {
-      this.log(`[push] ${msg.to}: ${msg.title} — ${msg.body}`);
-      return;
-    }
-    await fetch("https://exp.host/--/api/v2/push/send", {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ to: msg.to, title: msg.title, body: msg.body, data: msg.data, priority: "high", sound: "default" }),
-    }).catch((err) => this.log(`[push] invio non riuscito: ${(err as Error).message}`));
+    await this.pushSender.send([msg]);
   }
 }
 

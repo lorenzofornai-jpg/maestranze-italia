@@ -19,9 +19,10 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { deviceMessages, type LoginChallengeResponse, type PendingApproval, type SessionUser } from "@maestranze/shared";
+import Constants from "expo-constants";
+import { deviceMessages, formatEuro, type LoginChallengeResponse, type PendingApproval, type SessionUser } from "@maestranze/shared";
 import { api, ApiFailure, setSession } from "./api";
-import { t } from "./i18n";
+import { locale, t } from "./i18n";
 import { forgetDevice, generateKey, signWithBiometrics, storedDeviceId } from "./keys";
 import { colors, fonts } from "./theme";
 
@@ -50,9 +51,17 @@ const errorText = (err: unknown) => {
 async function pushToken(): Promise<string | undefined> {
   try {
     if (!Device.isDevice) return undefined;
+    if (Platform.OS === "android") {
+      // Canale ad alta priorità: le richieste di approvazione devono arrivare subito.
+      await Notifications.setNotificationChannelAsync("approvals", {
+        name: t("home.pending"),
+        importance: Notifications.AndroidImportance.MAX,
+      });
+    }
     const { status } = await Notifications.requestPermissionsAsync();
     if (status !== "granted") return undefined;
-    return (await Notifications.getExpoPushTokenAsync()).data;
+    const projectId = (Constants.expoConfig?.extra as { eas?: { projectId?: string } } | undefined)?.eas?.projectId;
+    return (await Notifications.getExpoPushTokenAsync(projectId ? { projectId } : undefined)).data;
   } catch {
     return undefined;
   }
@@ -384,18 +393,22 @@ function Home({ deviceId, user, onLock, onUnlink }: { deviceId: string; user: Se
     refresh();
     const id = setInterval(refresh, 3000);
     const sub = Notifications.addNotificationReceivedListener(() => refresh());
+    // Tocco sulla notifica: l'app si apre (dopo lo sblocco) e mostra subito la richiesta.
+    const tap = Notifications.addNotificationResponseReceivedListener(() => refresh());
     return () => {
       clearInterval(id);
       sub.remove();
+      tap.remove();
     };
   }, [refresh]);
 
   /** Approva o rifiuta: la firma richiede impronta o volto, ogni volta. */
   const respond = async (a: PendingApproval, decision: "APPROVE" | "DENY") => {
     try {
-      const signature = await signWithBiometrics(deviceMessages.respond(a.id, a.nonce, decision), t("approval.reason"));
+      const reason = a.purpose === "TRANSACTION" ? t("approval.reason.pay", { amount: formatEuro(Number(a.details?.amountCents ?? 0), locale) }) : t("approval.reason");
+      const signature = await signWithBiometrics(deviceMessages.respond(a.id, a.nonce, decision), reason);
       const r = await api<{ status: "APPROVED" | "DENIED" }>("/device/approvals/respond", { deviceId, challengeId: a.id, decision, signature });
-      setNotice(t(`approval.done.${r.status}`));
+      setNotice(t(`approval.done.${a.purpose === "TRANSACTION" ? "PAY_" : ""}${r.status}`));
       refresh();
     } catch (err) {
       setNotice(errorText(err));
@@ -421,6 +434,14 @@ function Home({ deviceId, user, onLock, onUnlink }: { deviceId: string; user: Se
             <View key={a.id} style={s.card}>
               <Text style={[s.label, { color: colors.accent }]}>{time(a.createdAt)}</Text>
               <Text style={[s.serif, { fontSize: 28, color: colors.ink }]}>{t(`approval.${a.purpose}`)}</Text>
+              {a.purpose === "TRANSACTION" && a.details && (
+                <View style={{ gap: 2, marginVertical: 6 }}>
+                  {/* Dynamic linking: si approva esattamente questo importo verso questo beneficiario. */}
+                  <Text style={[s.serif, { fontSize: 40, color: colors.ink }]}>{formatEuro(Number(a.details.amountCents), locale)}</Text>
+                  <Text style={[s.body, { color: colors.ink2 }]}>{t("approval.payee", { payee: String(a.details.payee) })}</Text>
+                  <Text style={s.small}>{t("approval.order", { n: String(a.details.orderNumber) })}</Text>
+                </View>
+              )}
               {a.ip && <Text style={s.small}>{t("approval.from", { ip: a.ip })}</Text>}
               {a.userAgent && (
                 <Text style={s.small} numberOfLines={1}>

@@ -17,16 +17,38 @@
     },
     "android": {
       "package": "it.maestranze.app",
-      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "CAMERA"]
+      "permissions": [
+        "USE_BIOMETRIC",
+        "USE_FINGERPRINT",
+        "CAMERA"
+      ]
     },
     "plugins": [
-      ["expo-secure-store", { "faceIDPermission": "Usiamo Face ID per proteggere la chiave di accesso a Maestranze Italia." }],
-      ["expo-camera", { "cameraPermission": "La fotocamera serve a inquadrare il QR code per associare l'app al tuo profilo." }],
-      "expo-notifications",
+      [
+        "expo-secure-store",
+        {
+          "faceIDPermission": "Usiamo Face ID per proteggere la chiave di accesso a Maestranze Italia."
+        }
+      ],
+      [
+        "expo-camera",
+        {
+          "cameraPermission": "La fotocamera serve a inquadrare il QR code per associare l'app al tuo profilo."
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#93432a"
+        }
+      ],
       "expo-font"
     ],
     "extra": {
-      "apiUrl": "http://localhost:4000"
+      "apiUrl": "http://localhost:4000",
+      "eas": {
+        "projectId": "SOSTITUIRE-CON-ID-PROGETTO-EAS"
+      }
     }
   }
 }

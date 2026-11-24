@@ -225,6 +225,7 @@ export const catalogIt = {
   "error.ORDER_OUT_OF_STOCK": "Nel frattempo la disponibilità è cambiata.",
   "error.ORDER_INVALID_STATE": "L'ordine è cambiato nel frattempo: ricarica la pagina.",
   "error.PAYMENT_FAILED": "Il pagamento non è andato a buon fine. Puoi riprovare.",
+  "error.SMS_DELIVERY_FAILED": "Non siamo riusciti a inviare l'SMS. Riprova tra poco o usa un altro metodo.",
   // --- Errori ---
   "text.too_short": "Testo troppo breve.",
   "text.too_long": "Testo troppo lungo.",
@@ -467,6 +468,7 @@ export const catalogEn: Record<CatalogKey, string> = {
   "error.ORDER_OUT_OF_STOCK": "Availability changed in the meantime.",
   "error.ORDER_INVALID_STATE": "The order changed in the meantime: please reload the page.",
   "error.PAYMENT_FAILED": "The payment did not go through. You can try again.",
+  "error.SMS_DELIVERY_FAILED": "We could not send the SMS. Try again shortly or use another method.",
   "text.too_short": "Text too short.",
   "text.too_long": "Text too long.",
   "maison.name_required": "Please enter the Maison name.",

@@ -19,11 +19,13 @@ e trattiene una **commissione**.
 
 | Modulo | Stato | Contenuto |
 |---|---|---|
-| `packages/shared` | ✅ | Schema di registrazione (zod), P.IVA, codice fiscale, cellulare, 107 province, formati dei messaggi firmati |
-| `apps/api` | ✅ Identità e accesso | Registrazione, attivazione via email, login con 2FA, dispositivi, sessioni, audit |
-| `apps/web` | ✅ Identità e accesso | Home editoriale, registrazione in 4 passi, attivazione, accesso con 2FA, area riservata |
-| `apps/mobile` | ✅ Identità e accesso | Associazione con QR o con credenziali + SMS, sblocco biometrico, approvazione degli accessi web |
-| Catalogo, ricerca, RFQ, ordini, pagamenti | 🔜 | Vedi §5 |
+| `packages/shared` | ✅ | Schemi zod comuni (registrazione, Maison, prodotti, filtri, ordini), validatori italiani, 107 province, calcolo degli importi, formati firmati |
+| Identità e accesso | ✅ | Registrazione, attivazione via email, 2FA (SMS, TOTP, app), dispositivi, sessioni, audit |
+| Maison e catalogo | ✅ | Profilo editoriale bilingue, collezione, immagini verificate, candidatura e selezione dello staff, pagina pubblica, prezzi riservati |
+| Esplorazione e ricerca | ✅ | Regione → provincia → comune, faccette, full-text italiano/inglese, frasi in linguaggio naturale (regole o LLM) |
+| Ordini e pagamenti | ✅ (sandbox) | Prezzi con IVA per aliquota, SCA legata all'importo, fondi in custodia, accredito al netto della commissione, rimborsi, controversie, rilascio automatico |
+| Integrazioni | ✅ | SMS Twilio, push Expo, build EAS; adattatore Stripe Connect documentato (§6) |
+| `apps/mobile` | ✅ | Chiave biometrica, accesso diretto, approvazione di accessi e pagamenti con importo e beneficiario |
 
 ## 2. Account: domanda e offerta
 
@@ -100,18 +102,44 @@ basta crearla con importo e beneficiario: l'app li mostra e li firma (*dynamic l
 | `POST device/approvals` · `device/approvals/respond` · `GET me/approvals` | Richieste da approvare |
 | `GET me` · `POST me/mfa/totp/setup|confirm` · `POST me/devices/pairing` · `GET/DELETE me/devices` | Area riservata |
 
-## 5. Prossimi moduli (architettura completa)
+## 5. Catalogo, esplorazione, ordini
 
-| Modulo | Contenuto |
-|---|---|
-| **KYC / KYB** | Verifica d'impresa (visura camerale, IBAN, titolare effettivo) delegata al fornitore di pagamento; badge «Maison verificata» |
-| **Maison e catalogo** | Pagina editoriale, collezioni, schede prodotto (origine, lavorazione, DOP/IGP, minimi d'ordine, listini B2B riservati) |
-| **Esplorazione** | Regione → provincia → comune → Maison; ricerca in linguaggio naturale e matching domanda-offerta con un LLM (pgvector) |
-| **Richieste e trattative** | RFQ, campionature, offerte, commissioni su misura, messaggistica |
-| **Ordini e pagamenti** | Marketplace con split payment (Stripe Connect o Adyen for Platforms): fondi in custodia, rilascio alla consegna, commissione trattenuta automaticamente, rimborsi e controversie; conferma SCA via app |
-| **Fatturazione** | Fattura elettronica SDI (commissione del portale; per conto della Maison se delegata), corrispettivi |
-| **Logistica** | Spedizioni con tracciamento (catena del freddo per il food), ritiro in bottega |
-| **Back-office** | Selezione delle candidature, moderazione, controversie, Concierge |
+### Maison e selezione
+- Un account di offerta crea **una** Maison: nome, disciplina, motto, storia e mestiere in italiano (obbligatorio) e inglese (facoltativo), territorio, riconoscimenti, condizioni per i professionisti.
+- Le immagini si accettano solo se i primi byte sono davvero JPG, PNG o WebP; massimo 8 MB. In locale finiscono su disco (`MEDIA_DIR`), in produzione su un archivio a oggetti dietro la stessa interfaccia.
+- La candidatura richiede copertina e almeno un prodotto visibile. Lo staff seleziona fissando la commissione, oppure rifiuta con una motivazione; la Maison riceve l'esito via email.
+- Il prezzo riservato (netto) è visibile solo ai clienti professionali e allo staff.
 
-Infrastruttura consigliata: PostgreSQL gestito in UE; API e web su container (Cloud Run, Fly.io o Render, regione UE);
-segreti nel secret manager; WAF e CDN davanti al web; backup giornalieri e PITR; log e audit conservati per GDPR.
+### Esplorazione
+- Ogni Maison ha un indice `tsvector` pesato: nome e territorio, poi motto e prodotti, poi racconto. Si interroga in italiano e in inglese, senza accenti, con una variante per prefisso per le forme che lo stemmer non unifica.
+- Se nessuna Maison contiene tutte le parole, la ricerca si allarga ad almeno una e lo dice (`relaxed`).
+- `POST /v1/search/interpret` trasforma una frase in filtri. Usa l'LLM via Anthropic SDK (`messages.parse` con schema zod, sforzo basso, fallback lato server) se `ANTHROPIC_API_KEY` è configurata; altrimenti usa le regole (discipline, province, zone storiche come Irpinia o Langhe). Se l'LLM non risponde si torna alle regole.
+
+### Ordini e denaro
+```
+AWAITING_AUTHORIZATION ─SCA─▶ PAID (fondi in custodia) ─▶ ACCEPTED ─▶ SHIPPED ─▶ DELIVERED ─▶ COMPLETED (accredito)
+        │                       │                            │            │
+        └─ annullato            └─ rifiuto Maison / annullo  └─ DISPUTED ─┴─▶ staff: REFUNDED oppure COMPLETED
+                                   cliente → rimborso
+```
+- Un ordine riguarda una sola Maison. Il server ricalcola sempre prezzi, disponibilità, minimi e IVA.
+  - Cliente privato: listino IVA inclusa, IVA scorporata.
+  - Cliente professionale: prezzo riservato netto più IVA all'aliquota del prodotto (4, 5, 10 o 22%), con ordine minimo della Maison.
+- **SCA con dynamic linking**: l'autorizzazione usa i fattori dell'accesso, ma la sfida è di tipo `TRANSACTION` e porta importo e beneficiario, che compaiono nell'SMS e sull'app. Una sfida di pagamento non apre mai una sessione e una di accesso non autorizza mai un pagamento (test dedicato).
+- Le quantità si prenotano in modo atomico al pagamento e tornano disponibili se l'incasso fallisce o l'ordine viene annullato.
+- **Registro contabile** (`ledger_entries`): CHARGE, COMMISSION, PAYOUT, REFUND. Il rilascio blocca lo stato prima del trasferimento, quindi non può esserci un doppio accredito.
+- Rilascio automatico dopo `AUTO_RELEASE_DAYS` (14) dalla spedizione senza segnalazioni; il controllo gira ogni ora nel processo dell'API.
+
+## 6. Pagamenti reali: collegare Stripe Connect
+
+Il codice parla con un `PaymentProvider` (`apps/api/src/orders/payments.ts`). Oggi è attivo il `SandboxPaymentProvider`. Per andare in produzione:
+
+1. **Onboarding delle Maison**: account Stripe Connect *Express* creato alla selezione. La Maison completa la verifica KYC/KYB su Stripe; il suo `acct_…` si salva sulla Maison.
+2. **charge**: PaymentIntent sul conto del portale con `transfer_group` = numero d'ordine. La carta si raccoglie sul web con Stripe Elements dopo la nostra SCA, e Stripe gestisce 3-D Secure.
+3. **payout**: Transfer verso l'account della Maison per `payoutCents`. La commissione resta al portale.
+4. **refund**: Refund del PaymentIntent.
+5. **Webhook** Stripe (`payment_intent.succeeded`, `charge.dispute.created`) collegati alle transizioni dell'ordine.
+
+Adyen for Platforms segue lo stesso schema. Restano da fare: **fattura elettronica SDI** (commissione del portale; per conto della Maison se delegata), spedizioni con etichette e tracciamento dal corriere, messaggistica cliente–Maison, richieste di preventivo (RFQ).
+
+Infrastruttura consigliata: PostgreSQL gestito in UE; API e web su container (Cloud Run, Fly.io o Render, regione UE); immagini su archivio a oggetti con CDN; segreti nel secret manager; WAF e CDN davanti al web; backup giornalieri e PITR; log e audit conservati secondo il GDPR.
