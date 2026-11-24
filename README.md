@@ -3,7 +3,7 @@
 *Il portale del saper fare italiano.* Le Maison del Made in Italy (food, beverage, sartoria, sport, artigianato)
 incontrano ristoratori, albergatori, aziende e intenditori. Esclusivo, editoriale, sicuro come una banca.
 
-Interfaccia bilingue **IT | EN**. Architettura e sicurezza: [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md) · App sul telefono: [`docs/TEST-SU-TELEFONO.md`](docs/TEST-SU-TELEFONO.md).
+Interfaccia bilingue **IT | EN**. Roadmap: [`docs/ROADMAP.md`](docs/ROADMAP.md) · Architettura e sicurezza: [`docs/ARCHITETTURA.md`](docs/ARCHITETTURA.md) · App sul telefono: [`docs/TEST-SU-TELEFONO.md`](docs/TEST-SU-TELEFONO.md).
 
 ## Cosa c'è
 
@@ -23,20 +23,47 @@ packages/shared  schemi, validatori italiani, territori, calcolo degli importi
 
 ## Avvio in locale
 
+Servono **Node 22**, **pnpm** (`npm i -g pnpm`) e **Docker Desktop** (per database e posta di prova).
+
 ```bash
+git clone https://github.com/lorenzofornai-jpg/maestranze-italia.git
+cd maestranze-italia
 pnpm install
-docker compose up -d                  # PostgreSQL + Mailpit (email su http://localhost:8025)
-cp apps/api/.env.example apps/api/.env
-# imposta DATA_ENCRYPTION_KEY con: openssl rand -base64 32
+docker compose up -d                   # PostgreSQL + Mailpit (email su http://localhost:8025)
+
+cp apps/api/.env.example apps/api/.env # su Windows: copy apps\api\.env.example apps\api\.env
+node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+# incolla il risultato in apps/api/.env alla riga DATA_ENCRYPTION_KEY=
+
 pnpm db:migrate
-pnpm --filter @maestranze/api db:seed   # 8 Maison dimostrative, staff@maestranze.it e chef@osteria.it (password Maestranze!2026)
-pnpm --filter @maestranze/api admin:grant tua@email.it   # nomina staff un account
-pnpm dev:api                          # http://localhost:4000
-pnpm dev:web                          # http://localhost:3000
-pnpm dev:mobile                       # Expo (imposta extra.apiUrl in apps/mobile/app.json con l'IP del computer)
+pnpm --filter @maestranze/api db:seed  # 8 Maison dimostrative e due account di prova
 ```
 
-In sviluppo gli SMS e le notifiche push si leggono nel log dell'API; i link delle email compaiono anche lì.
+Poi, in **due terminali** separati:
+
+```bash
+pnpm dev:api    # API su http://localhost:4000 — qui compaiono i codici SMS
+pnpm dev:web    # sito su http://localhost:3000
+```
+
+### Accedere
+
+Apri http://localhost:3000, scegli **Accedi** e usa un account dimostrativo (password `Maestranze!2026`):
+
+| Email | Profilo |
+|---|---|
+| `chef@osteria.it` | Ristorante (domanda, vede i prezzi riservati) |
+| `staff@maestranze.it` | Staff del portale (selezione, controversie) |
+| `caseificio0@maison.maestranze.it` | Maison (offerta) — anche `podere1@…`, `sartoria2@…`, ecc. |
+
+Il **codice SMS** non arriva al telefono in sviluppo: lo trovi nel terminale di `pnpm dev:api`, in una riga
+come `[sms] +3933…: Maestranze Italia: il tuo codice di accesso è 123456`. Le email (attivazione, avvisi
+d'ordine) si leggono su http://localhost:8025.
+
+Per un account nuovo: **Richiedi l'accesso**, apri il link di attivazione da Mailpit, accedi e conferma il
+cellulare con il codice dal terminale. Per nominare staff un account: `pnpm --filter @maestranze/api admin:grant tua@email.it`.
+
+App mobile: vedi [`docs/TEST-SU-TELEFONO.md`](docs/TEST-SU-TELEFONO.md).
 
 ## Test
 
