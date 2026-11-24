@@ -466,9 +466,19 @@ export class AuthService {
       throw Errors.invalidSignature();
     }
     await this.db.update(devices).set({ lastSeenAt: this.now() }).where(eq(devices.id, device.id));
+    return this.approvalsFor(device.accountId);
+  }
+
+  /** Richieste in attesa per l'app già sbloccata (sessione mobile aperta con la chiave del dispositivo). */
+  async approvalsForSession(session: { accountId: string; channel: Channel; deviceId: string | null }): Promise<PendingApproval[]> {
+    if (session.channel !== "MOBILE" || !session.deviceId) throw Errors.forbidden();
+    return this.approvalsFor(session.accountId);
+  }
+
+  private async approvalsFor(accountId: string): Promise<PendingApproval[]> {
     const rows = await this.db.query.authChallenges.findMany({
       where: and(
-        eq(authChallenges.accountId, device.accountId),
+        eq(authChallenges.accountId, accountId),
         eq(authChallenges.pushStatus, "PENDING"),
         eq(authChallenges.stage, "PASSWORD_OK"),
         gt(authChallenges.expiresAt, this.now()),

@@ -297,6 +297,10 @@ describe("app mobile come chiave di sicurezza", () => {
     expect(sessionToken).toBeTruthy();
     const me = await t.app.inject({ method: "GET", url: "/v1/me", headers: { authorization: `Bearer ${sessionToken}` } });
     expect(me.json().user.mfaMethods).toContain("MOBILE_APP");
+    // L'app sbloccata vede le richieste in attesa con la sessione; dal web la stessa rotta è vietata.
+    const apprs = await t.app.inject({ method: "GET", url: "/v1/me/approvals", headers: { authorization: `Bearer ${sessionToken}` } });
+    expect(apprs.json()).toEqual({ approvals: [] });
+    expect((await t.app.inject({ method: "GET", url: "/v1/me/approvals", cookies: { [SESSION_COOKIE]: cookie } })).statusCode).toBe(403);
     expect((await post("/v1/device/login", { deviceId: phone.deviceId, nonce, signature })).statusCode).toBe(401);
   });
 

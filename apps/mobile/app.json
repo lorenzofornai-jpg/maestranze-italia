@@ -1,0 +1,32 @@
+{
+  "expo": {
+    "name": "Maestranze Italia",
+    "slug": "maestranze-italia",
+    "scheme": "maestranze",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "backgroundColor": "#1b1915",
+    "ios": {
+      "bundleIdentifier": "it.maestranze.app",
+      "supportsTablet": false,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Usiamo Face ID per proteggere la chiave di accesso a Maestranze Italia.",
+        "NSCameraUsageDescription": "La fotocamera serve a inquadrare il QR code per associare l'app al tuo profilo."
+      }
+    },
+    "android": {
+      "package": "it.maestranze.app",
+      "permissions": ["USE_BIOMETRIC", "USE_FINGERPRINT", "CAMERA"]
+    },
+    "plugins": [
+      ["expo-secure-store", { "faceIDPermission": "Usiamo Face ID per proteggere la chiave di accesso a Maestranze Italia." }],
+      ["expo-camera", { "cameraPermission": "La fotocamera serve a inquadrare il QR code per associare l'app al tuo profilo." }],
+      "expo-notifications",
+      "expo-font"
+    ],
+    "extra": {
+      "apiUrl": "http://localhost:4000"
+    }
+  }
+}

@@ -2,6 +2,8 @@ import { z } from "zod";
 import { isValidCodiceFiscale, isValidMobilePhone, isValidPartitaIva, normalizePhone } from "./validators";
 
 export * from "./validators";
+export * from "./territory";
+import { PROVINCE_CODES } from "./territory";
 
 /** Lato del mercato: DOMANDA (chi acquista) o OFFERTA (chi produce e vende). */
 export const ACCOUNT_ROLES = ["BUYER", "MAKER"] as const;
@@ -74,7 +76,7 @@ const commonFields = {
     .string()
     .trim()
     .toUpperCase()
-    .regex(/^[A-Z]{2}$/, "province.invalid"),
+    .refine((v) => PROVINCE_CODES.includes(v), "province.invalid"),
   city: z.string().trim().min(2, "city.invalid").max(120),
   locale: z.enum(LOCALES).default("it"),
   consents: consentsSchema,

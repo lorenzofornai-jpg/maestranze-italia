@@ -14,7 +14,7 @@ export const SESSION_COOKIE = "mi_session";
 
 declare module "fastify" {
   interface FastifyRequest {
-    auth?: { account: Account; session: { id: string; accountId: string; channel: Channel; createdAt: Date } };
+    auth?: { account: Account; session: { id: string; accountId: string; channel: Channel; createdAt: Date; deviceId: string | null } };
   }
 }
 
@@ -145,6 +145,9 @@ export async function buildApp(opts: { db: Db; config: Config; notifier: Notifie
     auth.totpConfirm(req.auth!.account, body(req).code, ctx(req)),
   );
   app.post("/v1/me/devices/pairing", { preHandler: requireSession }, async (req) => auth.createPairing(req.auth!.account));
+  app.get("/v1/me/approvals", { preHandler: requireSession }, async (req) => ({
+    approvals: await auth.approvalsForSession(req.auth!.session),
+  }));
   app.get("/v1/me/devices", { preHandler: requireSession }, async (req) => ({ devices: await auth.listDevices(req.auth!.account) }));
   app.delete<{ Params: { id: string } }>("/v1/me/devices/:id", { preHandler: requireSession }, async (req) => {
     await auth.revokeDevice(req.auth!.account, req.params.id, ctx(req));
