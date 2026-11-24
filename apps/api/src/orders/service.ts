@@ -104,9 +104,16 @@ export class OrderService {
   // --- Preventivo e creazione -------------------------------------------------------------------
 
   /** Ricalcola sempre prezzi, disponibilità e minimi dal database: il carrello del browser non fa fede. */
-  async quote(buyer: Account, input: unknown): Promise<{ priced: PricedOrder; maison: Maison; input: ReturnType<typeof orderInputSchema.parse> }> {
+  async quote(
+    buyer: Account,
+    input: unknown,
+    opts: { requireAddress: boolean } = { requireAddress: true },
+  ): Promise<{ priced: PricedOrder; maison: Maison; input: ReturnType<typeof orderInputSchema.parse> }> {
     if (buyer.role !== "BUYER") throw new ApiError(403, "ORDER_BUYERS_ONLY");
-    const data = parseOrThrow(orderInputSchema, input);
+    // Per il preventivo l'indirizzo non serve ancora: la cassa mostra i totali mentre lo si compila.
+    const data = opts.requireAddress
+      ? parseOrThrow(orderInputSchema, input)
+      : (parseOrThrow(orderInputSchema.partial({ shippingAddress: true }), input) as ReturnType<typeof orderInputSchema.parse>);
     const maison = await this.db.query.maisons.findFirst({ where: and(eq(maisons.id, data.maisonId), eq(maisons.status, "APPROVED")) });
     if (!maison) throw Errors.notFound();
 

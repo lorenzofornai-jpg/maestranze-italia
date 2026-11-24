@@ -710,3 +710,204 @@
 .art a {
   display: block;
 }
+
+/* --- Cassa e ordini ---------------------------------------------------------------------------- */
+
+.checkout {
+  display: grid;
+  grid-template-columns: 1fr 400px;
+  gap: clamp(32px, 5vw, 80px);
+  align-items: start;
+}
+.checkout-main {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+.checkout-summary {
+  position: sticky;
+  top: 110px;
+  background: var(--ivory);
+  border: 1px solid var(--line);
+  padding: 32px 28px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+@media (max-width: 960px) {
+  .checkout {
+    grid-template-columns: 1fr;
+  }
+  .checkout-summary {
+    position: static;
+  }
+}
+.checkout-done {
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  gap: 26px;
+}
+.totals {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  gap: 10px 20px;
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.totals dd {
+  margin: 0;
+  text-align: right;
+  font-variant-numeric: tabular-nums;
+}
+.totals .grand {
+  font-family: var(--serif);
+  font-size: 28px;
+  color: var(--ink);
+  border-top: 1px solid var(--line-strong);
+  padding-top: 12px;
+  margin-top: 4px;
+}
+.pay-box {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.pay-amount {
+  font-size: 46px;
+  margin: 0;
+}
+.pay-box .lead {
+  font-size: 15px;
+}
+.order-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+  align-items: flex-start;
+}
+.order-head {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 56px;
+}
+.order-head .link {
+  align-self: flex-start;
+}
+.order-head h1 a:hover {
+  color: var(--accent);
+}
+.line-row {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 20px;
+  align-items: baseline;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--line);
+}
+.line-row .name {
+  font-family: var(--serif);
+  font-size: 21px;
+}
+.line-row .price {
+  font-size: 20px;
+}
+.timeline {
+  list-style: none;
+  margin: 0;
+  padding: 0 0 0 18px;
+  border-left: 1px solid var(--line-strong);
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.timeline li {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  position: relative;
+}
+.timeline li::before {
+  content: "";
+  position: absolute;
+  left: -22px;
+  top: 6px;
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--accent);
+}
+.orders-list {
+  border-top: 1px solid var(--line-strong);
+}
+.order-row {
+  display: grid;
+  grid-template-columns: 150px 1fr 120px 120px 170px;
+  gap: 16px;
+  align-items: center;
+  padding: 18px 0;
+  border-bottom: 1px solid var(--line);
+  transition: background 400ms var(--ease), padding 400ms var(--ease);
+}
+.order-row:hover {
+  background: var(--ivory);
+  padding-left: 10px;
+}
+.order-row .name {
+  font-family: var(--serif);
+  font-size: 22px;
+}
+.order-row .price {
+  font-size: 20px;
+  text-align: right;
+}
+.order-row .badge {
+  justify-self: end;
+}
+@media (max-width: 760px) {
+  .order-row {
+    grid-template-columns: 1fr auto;
+  }
+  .order-row .mono,
+  .order-row .small {
+    display: none;
+  }
+}
+.badge.warn {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.cart-link {
+  position: relative;
+}
+.cart-count {
+  position: absolute;
+  top: -4px;
+  right: -14px;
+  min-width: 16px;
+  height: 16px;
+  border-radius: 8px;
+  background: var(--accent);
+  color: var(--paper);
+  font-size: 9.5px;
+  letter-spacing: 0;
+  display: grid;
+  place-items: center;
+  padding: 0 4px;
+}
+.pay-box .otp {
+  gap: 8px;
+}
+.pay-box .otp input {
+  width: 44px;
+  height: 58px;
+  font-size: 28px;
+}
+.totals {
+  column-gap: 0;
+}
+.totals dd {
+  padding-left: 20px;
+}

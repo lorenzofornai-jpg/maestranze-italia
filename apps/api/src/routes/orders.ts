@@ -25,7 +25,7 @@ export function orderRoutes(
 
   app.get("/v1/orders", me, async (req) => orders.list(acct(req)));
   app.post("/v1/orders/quote", me, async (req) => {
-    const { priced } = await orders.quote(acct(req), req.body);
+    const { priced } = await orders.quote(acct(req), req.body, { requireAddress: false });
     return priced;
   });
   app.post("/v1/orders", strictMe, async (req) => orders.create(acct(req), req.body, deps.channelOf(req), deps.ctx(req)));

@@ -32,7 +32,11 @@ export default function LoginPage() {
     return () => clearTimeout(id);
   }, [cooldown]);
 
-  const done = useCallback(() => router.push(`/${locale}/area`), [router, locale]);
+  // Dopo l'accesso si torna alla pagina di partenza (es. la cassa), solo se interna al sito.
+  const done = useCallback(() => {
+    const next = new URLSearchParams(window.location.search).get("next");
+    router.push(next && next.startsWith(`/${locale}/`) && !next.startsWith("//") ? next : `/${locale}/area`);
+  }, [router, locale]);
 
   const restart = () => {
     setStage("password");

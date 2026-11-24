@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { useCart } from "@/lib/cart";
 import { useLocale, useT } from "@/lib/i18n-client";
 import { Wordmark } from "./brand";
 
@@ -30,6 +31,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
   const t = useT();
   const [scrolled, setScrolled] = useState(false);
   const [session, setSession] = useState(signedIn);
+  const { count } = useCart();
 
   // Sulle pagine pubbliche la testata scopre da sola se c'è una sessione aperta.
   useEffect(() => {
@@ -57,6 +59,12 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
         <Wordmark locale={locale} />
         <nav className="header-nav right">
           <LangSwitch />
+          {count > 0 && (
+            <Link href={`/${locale}/ordine`} className="cart-link">
+              {t("order.title")}
+              <span className="cart-count">{count}</span>
+            </Link>
+          )}
           <Link href={`/${locale}/${session ? "area" : "accedi"}`} className="signin">
             {t(session ? "nav.area" : "nav.signin")}
           </Link>

@@ -8,6 +8,7 @@ import {
   DISCIPLINES,
   PRODUCT_UNITS,
   REGIONS,
+  VAT_RATES,
   formatEuro,
   pick,
   type I18nText,
@@ -387,6 +388,7 @@ function ProductDrawer({ product, onClose, onSaved }: { product: MyProduct | nul
   const [stock, setStock] = useState(product?.stock == null ? "" : String(product.stock));
   const [madeToOrder, setMadeToOrder] = useState(product?.madeToOrder ?? false);
   const [active, setActive] = useState(product?.active ?? true);
+  const [vat, setVat] = useState(String(product?.vatRateBps ?? 2200));
   const [file, setFile] = useState<File | null>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
@@ -414,6 +416,7 @@ function ProductDrawer({ product, onClose, onSaved }: { product: MyProduct | nul
         stock: stock === "" ? null : Number(stock),
         madeToOrder,
         active,
+        vatRateBps: Number(vat),
       };
       const r = product
         ? await api<{ id: string }>(`/me/products/${product.id}`, { method: "PUT", body })
@@ -459,6 +462,15 @@ function ProductDrawer({ product, onClose, onSaved }: { product: MyProduct | nul
               {PRODUCT_UNITS.map((u) => (
                 <option key={u} value={u}>
                   {t(`unit.${u}`)}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <Field label={t("editor.product.vat")} error={errors.vatRateBps}>
+            <select value={vat} onChange={(e) => setVat(e.target.value)}>
+              {VAT_RATES.map((r) => (
+                <option key={r} value={r}>
+                  {t(`vat.${r}`)}
                 </option>
               ))}
             </select>
