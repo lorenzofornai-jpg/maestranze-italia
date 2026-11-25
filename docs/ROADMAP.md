@@ -14,6 +14,12 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 - 🔜 **Ricerca con l'LLM**: prima prova con una chiave `ANTHROPIC_API_KEY` reale, insieme di frasi d'esempio da verificare
 - 🔜 **SMS reali**: account Twilio, mittente alfanumerico «Maestranze» registrato per l'Italia
 
+## 1b. Sicurezza dell'accesso
+- ◻️ **«Usa solo l'app e l'autenticatore»**: opzione nell'area riservata che, una volta associata l'app,
+  toglie l'SMS dai metodi di accesso e di autorizzazione dei pagamenti (difesa dal *SIM swap*). L'SMS resta
+  solo per il recupero dell'account, con verifiche aggiuntive (es. link via email + attesa di sicurezza +
+  avviso su tutti i dispositivi). Disattivarla richiede la conferma dall'app.
+
 ## 2. Pagamenti reali
 - 🔜 **Stripe Connect** (o Adyen for Platforms): adattatore `PaymentProvider`, Stripe Elements in cassa, 3-D Secure, webhook
 - 🔜 **Onboarding KYC/KYB delle Maison** su Stripe Express alla selezione; badge «Maison verificata»
