@@ -65,6 +65,18 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
               <span className="cart-count">{count}</span>
             </Link>
           )}
+          {session && (
+            <button
+              type="button"
+              className="signout"
+              onClick={async () => {
+                await fetch("/api/v1/auth/logout", { method: "POST", credentials: "same-origin" }).catch(() => undefined);
+                window.location.href = `/${locale}`;
+              }}
+            >
+              {t("area.logout")}
+            </button>
+          )}
           <Link href={`/${locale}/${session ? "area" : "accedi"}`} className="signin">
             {t(session ? "nav.area" : "nav.signin")}
           </Link>

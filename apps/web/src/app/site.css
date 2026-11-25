@@ -1006,3 +1006,28 @@ section {
     max-height: 46vh;
   }
 }
+
+/* «Esci» nella testata, discreto accanto all'area riservata */
+.header-nav .signout {
+  appearance: none;
+  background: none;
+  border: 0;
+  padding: 6px 0;
+  font: inherit;
+  letter-spacing: inherit;
+  text-transform: inherit;
+  color: inherit;
+  cursor: pointer;
+  opacity: 0.75;
+  transition: opacity 400ms var(--ease), color 400ms var(--ease);
+}
+.header-nav .signout:hover {
+  opacity: 1;
+  color: var(--accent);
+}
+@media (max-width: 620px) {
+  /* Sul telefono la testata resta essenziale: «Esci» è in fondo all'area riservata. */
+  .header-nav .signout {
+    display: none;
+  }
+}

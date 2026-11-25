@@ -202,8 +202,8 @@ const it = {
   "area.devices.since": "dal {date}",
   "area.logout": "Esci",
   "area.next.title": "Il prossimo capitolo",
-  "area.next.BUYER": "A breve: ricerca delle Maison per territorio e disciplina, richieste di fornitura e ordini protetti.",
-  "area.next.MAKER": "A breve: la pagina editoriale della tua Maison, il catalogo e la candidatura alla selezione.",
+  "area.next.BUYER": "Esplora le Maison per territorio e disciplina, ordina con pagamento protetto e segui le consegne.",
+  "area.next.MAKER": "Cura la pagina della tua Maison e la collezione, candidati alla selezione e gestisci gli ordini ricevuti.",
   "close": "Chiudi",
 
   // --- Errori (codici dell'API e chiavi di validazione) ---
@@ -434,8 +434,8 @@ const en: Record<keyof typeof it, string> = {
   "area.devices.since": "since {date}",
   "area.logout": "Sign out",
   "area.next.title": "The next chapter",
-  "area.next.BUYER": "Coming soon: search Maisons by territory and discipline, supply requests and protected orders.",
-  "area.next.MAKER": "Coming soon: your Maison's editorial page, the catalogue and the selection application.",
+  "area.next.BUYER": "Explore Maisons by territory and discipline, order with protected payment and track deliveries.",
+  "area.next.MAKER": "Curate your Maison's page and collection, apply for selection and manage the orders you receive.",
   close: "Close",
 
   "error.VALIDATION_FAILED": "Please check the highlighted fields.",
