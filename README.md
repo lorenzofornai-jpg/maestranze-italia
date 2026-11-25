@@ -21,6 +21,12 @@ apps/mobile      Expo / React Native — chiave biometrica, accesso diretto, app
 packages/shared  schemi, validatori italiani, territori, calcolo degli importi
 ```
 
+## Provarlo senza installare nulla
+
+Il modo più semplice è **GitHub Codespaces**: sul repository premi **Code → Codespaces → Create codespace
+on main** e il sito si apre da solo nel browser, con database, dati di prova e posta di prova (dove
+arrivano anche i codici SMS). Guida: [`docs/AVVIO-CODESPACES.md`](docs/AVVIO-CODESPACES.md).
+
 ## Avvio in locale
 
 Servono **Node 22**, **pnpm** (`npm i -g pnpm`) e **Docker Desktop** (per database e posta di prova).

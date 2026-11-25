@@ -62,6 +62,8 @@ export class LiveNotifier implements Notifier {
     private smsSender: SmsSender,
     private pushSender: PushSender,
     private log: (msg: string) => void,
+    /** Solo sviluppo: copia ogni SMS nella posta di prova (Mailpit), per leggere i codici dal browser. */
+    private copySmsToMailbox = false,
   ) {
     this.transport = nodemailer.createTransport(smtpUrl);
   }
@@ -77,6 +79,16 @@ export class LiveNotifier implements Notifier {
 
   async sms(msg: SmsMessage) {
     await this.smsSender.send(msg);
+    if (this.copySmsToMailbox) {
+      await this.transport
+        .sendMail({
+          from: this.from,
+          to: `sms${msg.to.replace(/\D/g, "")}@sms.sviluppo`,
+          subject: `SMS a ${msg.to}${msg.code ? ` — codice ${msg.code}` : ""}`,
+          text: msg.text,
+        })
+        .catch((err: Error) => this.log(`[sms] copia nella posta di prova non riuscita: ${err.message}`));
+    }
   }
 
   async push(msg: PushMessage) {

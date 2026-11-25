@@ -34,7 +34,7 @@ const push =
         log,
       )
     : new ConsolePush(log);
-const notifier = new LiveNotifier(config.SMTP_URL, config.MAIL_FROM, sms, push, log);
+const notifier = new LiveNotifier(config.SMTP_URL, config.MAIL_FROM, sms, push, log, config.SMS_PROVIDER === "console" && config.NODE_ENV !== "production");
 const app = await buildApp({ db, config, notifier, logger: config.NODE_ENV !== "production" });
 
 await app.listen({ port: config.PORT, host: "0.0.0.0" });
