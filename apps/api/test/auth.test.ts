@@ -182,6 +182,13 @@ describe("accesso dal web con doppia autenticazione", () => {
     expect(ok.statusCode).toBe(401);
   });
 
+  it("dietro un proxy accetta l'host su cui il browser vede il sito, non altri", async () => {
+    const via = (origin: string, fwd: string) =>
+      post("/v1/auth/login", { email: "a@b.it", password: "x" }, { headers: { origin, "x-forwarded-host": fwd } });
+    expect((await via("https://mio-sito-3000.app.github.dev", "mio-sito-3000.app.github.dev")).statusCode).toBe(401);
+    expect((await via("https://evil.example", "mio-sito-3000.app.github.dev")).statusCode).toBe(403);
+  });
+
   it("la sessione scade dopo 15 minuti di inattività", async () => {
     const { cookie } = await activeAccount(t);
     t.clock.offsetMs = 10 * 60 * 1000;

@@ -82,11 +82,29 @@ export async function buildApp(opts: {
   const channelOf = (req: FastifyRequest): Channel => (req.headers["x-client"] === "mobile" ? "MOBILE" : "WEB");
   const body = (req: FastifyRequest) => (req.body ?? {}) as Record<string, unknown>;
 
-  /** Protezione CSRF per il web: le richieste con il cookie di sessione devono arrivare dal sito. */
+  /**
+   * Protezione CSRF per il web: le richieste che modificano dati devono arrivare dal sito stesso.
+   * Valgono l'indirizzo configurato (WEB_ORIGIN) e l'host su cui il browser vede il sito, come lo
+   * riportano i proxy (Next, inoltro porte di Codespaces): una pagina di un altro dominio non passa.
+   */
+  const first = (v: string | string[] | undefined) => (Array.isArray(v) ? v[0] : v)?.split(",")[0]?.trim().toLowerCase();
+  const codespace = process.env.CODESPACE_NAME
+    ? new RegExp(`^https://${process.env.CODESPACE_NAME}-\\d+\\.${(process.env.GITHUB_CODESPACES_PORT_FORWARDING_DOMAIN ?? "app.github.dev").replace(/\./g, "\\.")}$`)
+    : null;
   app.addHook("onRequest", async (req) => {
     if (req.method === "GET" || req.method === "HEAD" || req.method === "OPTIONS") return;
     const origin = req.headers.origin;
-    if (origin && origin !== config.WEB_ORIGIN) throw Errors.forbidden();
+    if (!origin || origin === config.WEB_ORIGIN || codespace?.test(origin)) return;
+    let host: string;
+    try {
+      host = new URL(origin).host.toLowerCase();
+    } catch {
+      throw Errors.forbidden();
+    }
+    const seen = [first(req.headers["x-forwarded-host"]), first(req.headers.host)];
+    if (seen.includes(host)) return;
+    req.log.warn({ origin, expected: config.WEB_ORIGIN, forwardedHost: seen[0], host: seen[1] }, "richiesta rifiutata: origine diversa dal sito");
+    throw Errors.forbidden();
   });
 
   const tokenOf = (req: FastifyRequest) => {
