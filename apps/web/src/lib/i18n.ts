@@ -13,9 +13,9 @@ const it = {
   "nav.area": "Area riservata",
 
   "hero.eyebrow": "Il saper fare italiano · su invito",
-  "hero.title.1": "Dove le mani italiane",
-  "hero.title.2": "incontrano chi sa",
-  "hero.title.3": "riconoscerle.",
+  "hero.title.1": "Dove il saper fare italiano",
+  "hero.title.2": "incontra chi sa",
+  "hero.title.3": "riconoscerlo.",
   "hero.body":
     "Maestranze Italia riunisce le botteghe, le sartorie, i caseifici e le cantine che custodiscono il Made in Italy, e le apre a ristoratori, albergatori, aziende e intenditori. Ogni Maison è selezionata. Ogni scambio è protetto.",
   "hero.cta.request": "Richiedi l'accesso",
@@ -250,9 +250,9 @@ const en: Record<keyof typeof it, string> = {
   "nav.area": "Private area",
 
   "hero.eyebrow": "Italian craftsmanship · by invitation",
-  "hero.title.1": "Where Italian hands",
-  "hero.title.2": "meet those who know",
-  "hero.title.3": "how to recognise them.",
+  "hero.title.1": "Where Italian craftsmanship",
+  "hero.title.2": "meets those who know",
+  "hero.title.3": "how to recognise it.",
   "hero.body":
     "Maestranze Italia brings together the workshops, tailors, dairies and wineries that safeguard Made in Italy, and opens them to restaurateurs, hoteliers, companies and connoisseurs. Every Maison is selected. Every exchange is protected.",
   "hero.cta.request": "Request access",
