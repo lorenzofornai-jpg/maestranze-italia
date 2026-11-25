@@ -309,7 +309,7 @@ export class AuthService {
     loginToken: unknown,
     purpose: ChallengePurpose = "LOGIN",
     accountId?: string,
-  ): Promise<{ maskedPhone: string; expiresAt: string }> {
+  ): Promise<{ maskedPhone: string; expiresAt: string; devCode?: string }> {
     const { challenge, account } = await this.loadChallenge(loginToken, purpose, accountId);
     const methods = challenge.enrollment ? ["SMS"] : await this.activeFactors(account.id);
     if (!methods.includes("SMS")) throw Errors.methodNotAvailable();
@@ -345,7 +345,10 @@ export class AuthService {
     } catch {
       throw new ApiError(502, "SMS_DELIVERY_FAILED");
     }
-    return { maskedPhone: maskPhone(account.phone), expiresAt: otpExpiresAt.toISOString() };
+    // Solo in sviluppo, senza fornitore SMS reale: il codice torna anche alla pagina, per provare l'app
+    // senza leggere i log. In produzione la configurazione impone un fornitore reale e questo non accade.
+    const devCode = this.config.SMS_PROVIDER === "console" && this.config.NODE_ENV === "development" ? code : undefined;
+    return { maskedPhone: maskPhone(account.phone), expiresAt: otpExpiresAt.toISOString(), ...(devCode ? { devCode } : {}) };
   }
 
   private async failAttempt(challenge: AuthChallenge): Promise<never> {

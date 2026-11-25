@@ -36,6 +36,7 @@ export function PaymentAuthorization({
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [devCode, setDevCode] = useState<string | null>(null);
   const sentFor = useRef<string | null>(null);
   const base = `/orders/${order.id}/authorize`;
   const { authToken } = authorization;
@@ -59,8 +60,11 @@ export function PaymentAuthorization({
     if (!method || sentFor.current === `${authToken}:${method}`) return;
     sentFor.current = `${authToken}:${method}`;
     if (method === "SMS") {
-      api(`${base}/sms`, { body: { authToken } })
-        .then(() => setCooldown(30))
+      api<{ devCode?: string }>(`${base}/sms`, { body: { authToken } })
+        .then((r) => {
+          setCooldown(30);
+          setDevCode(r.devCode ?? null);
+        })
         .catch(fail);
     } else if (method === "MOBILE_APP") {
       api(`${base}/push`, { body: { authToken } }).catch(fail);
@@ -133,6 +137,7 @@ export function PaymentAuthorization({
           style={{ display: "flex", flexDirection: "column", gap: 24 }}
         >
           <p className="small">{method === "SMS" ? t("mfa.code.sent", { phone: authorization.maskedPhone }) : t("mfa.method.TOTP.body")}</p>
+          {method === "SMS" && devCode && <p className="notice">{t("dev.sms_code", { code: devCode })}</p>}
           <OtpInput value={code} onChange={setCode} onComplete={verify} />
           <div className="auth-actions">
             <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
@@ -144,8 +149,11 @@ export function PaymentAuthorization({
                     type="button"
                     className="link"
                     onClick={() =>
-                      api(`${base}/sms`, { body: { authToken } })
-                        .then(() => setCooldown(30))
+                      api<{ devCode?: string }>(`${base}/sms`, { body: { authToken } })
+                        .then((r) => {
+          setCooldown(30);
+          setDevCode(r.devCode ?? null);
+        })
                         .catch(fail)
                     }
                   >

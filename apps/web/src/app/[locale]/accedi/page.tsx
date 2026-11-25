@@ -24,6 +24,7 @@ export default function LoginPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [cooldown, setCooldown] = useState(0);
+  const [devCode, setDevCode] = useState<string | null>(null);
   const verifying = useRef(false);
 
   useEffect(() => {
@@ -54,7 +55,8 @@ export default function LoginPage() {
     if (!c) return;
     setError(null);
     try {
-      await api("/auth/mfa/sms", { body: { loginToken: c.loginToken } });
+      const r = await api<{ devCode?: string }>("/auth/mfa/sms", { body: { loginToken: c.loginToken } });
+      setDevCode(r.devCode ?? null);
       setCooldown(30);
     } catch (err) {
       if (err instanceof ApiFailure && err.code === "OTP_RATE_LIMITED") {
@@ -224,6 +226,7 @@ export default function LoginPage() {
                 ? t("mfa.code.sent", { phone })
                 : t("mfa.method.TOTP.body")}
           </p>
+          {method === "SMS" && devCode && <p className="notice">{t("dev.sms_code", { code: devCode })}</p>}
           <OtpInput value={code} onChange={setCode} onComplete={verify} />
           {error && <p className="notice error">{error}</p>}
           <div className="auth-actions">

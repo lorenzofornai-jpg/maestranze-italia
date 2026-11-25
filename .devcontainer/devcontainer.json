@@ -4,10 +4,10 @@
   "service": "app",
   "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
   "shutdownAction": "stopCompose",
-  "forwardPorts": [3000, "mailpit:8025"],
+  "forwardPorts": [3000, 8025],
   "portsAttributes": {
     "3000": { "label": "Maestranze Italia", "onAutoForward": "openBrowser" },
-    "mailpit:8025": { "label": "Posta e SMS di prova", "onAutoForward": "silent" }
+    "8025": { "label": "Posta e SMS di prova", "onAutoForward": "notify" }
   },
   "otherPortsAttributes": { "onAutoForward": "ignore" },
   "postCreateCommand": "bash .devcontainer/setup.sh",

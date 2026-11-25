@@ -28,9 +28,12 @@ Premi **Accedi** e usa un account dimostrativo. La password è sempre `Maestranz
 | `staff@maestranze.it` | Staff del portale: selezione delle Maison, controversie |
 | `caseificio0@maison.maestranze.it` | Una Maison: ordini ricevuti. Altre: `podere1@…`, `sartoria2@…` |
 
-**Il codice SMS** si legge nella posta di prova: scheda **Porte** → riga **Posta e SMS di prova (8025)** →
-mappamondo. Trovi un messaggio «SMS a +39… — codice 123456». Lì arrivano anche le email: attivazione
-dei nuovi account, avvisi d'ordine, esito della selezione.
+**Il codice SMS** compare direttamente sulla pagina, sopra le caselle: «Ambiente di prova: il codice inviato
+via SMS è 123456». Succede solo nell'ambiente di prova; con un fornitore SMS reale il codice arriva soltanto al telefono.
+
+Lo trovi anche nella posta di prova (scheda **Porte** → riga **Posta e SMS di prova (8025)** → mappamondo),
+oppure nel terminale con `grep "codice" /tmp/maestranze-api.log | tail -1`. Nella posta di prova arrivano anche
+le email: attivazione dei nuovi account, avvisi d'ordine, esito della selezione.
 
 ## 4. Le volte successive
 

@@ -15,7 +15,7 @@ if [ ! -f "$ENV" ]; then
 fi
 # Nel Codespace database e posta sono servizi a parte (vedi docker-compose.yml).
 sed -i "s|^DATABASE_URL=.*|DATABASE_URL=${DATABASE_URL:-postgres://maestranze:maestranze@db:5432/maestranze}|" "$ENV"
-sed -i "s|^SMTP_URL=.*|SMTP_URL=${SMTP_URL:-smtp://mailpit:1025}|" "$ENV"
+sed -i "s|^SMTP_URL=.*|SMTP_URL=${SMTP_URL:-smtp://localhost:1025}|" "$ENV"
 
 echo "Attendo il database…"
 for _ in $(seq 1 60); do

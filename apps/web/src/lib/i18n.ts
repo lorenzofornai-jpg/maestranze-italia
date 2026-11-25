@@ -166,6 +166,7 @@ const it = {
   "mfa.code.resend": "Invia un nuovo codice",
   "mfa.code.resend_in": "Nuovo codice tra {s} s",
   "mfa.verify": "Conferma",
+  "dev.sms_code": "Ambiente di prova: il codice inviato via SMS è {code}.",
   "mfa.other": "Usa un altro metodo",
   "mfa.restart": "Ricomincia",
 
@@ -399,6 +400,7 @@ const en: Record<keyof typeof it, string> = {
   "mfa.code.resend": "Send a new code",
   "mfa.code.resend_in": "New code in {s} s",
   "mfa.verify": "Confirm",
+  "dev.sms_code": "Test environment: the code sent by SMS is {code}.",
   "mfa.other": "Use another method",
   "mfa.restart": "Start over",
 
