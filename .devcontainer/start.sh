@@ -32,3 +32,8 @@ setsid nohup bash -c "cd apps/web && NEXT_TELEMETRY_DISABLED=1 pnpm build >/tmp/
 
 echo "Maestranze Italia si sta avviando su ${ORIGIN} (circa un minuto)."
 echo "Codici SMS ed email di prova: scheda «Posta e SMS di prova» (porta 8025)."
+if [ -n "${ANTHROPIC_API_KEY:-}" ]; then
+  echo "Ricerca in linguaggio naturale: LLM attivo (chiave ANTHROPIC_API_KEY trovata)."
+else
+  echo "Ricerca in linguaggio naturale: regole (nessuna ANTHROPIC_API_KEY; vedi docs/AVVIO-CODESPACES.md)."
+fi

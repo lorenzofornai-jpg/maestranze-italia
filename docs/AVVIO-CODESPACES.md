@@ -73,6 +73,21 @@ Limiti di Expo Go: le notifiche push non arrivano (le richieste si vedono aprend
 disponibile finché il Codespace e lo script sono accesi. Con la porta 4000 pubblica l'API del Codespace è
 raggiungibile da internet: finita la prova, rimettila **Private**. Per l'installazione vera, vedi `TEST-SU-TELEFONO.md`.
 
+## 7. Ricerca con l'LLM (chiave Anthropic)
+
+La ricerca «Cerca come lo diresti a un amico» usa l'LLM se trova la variabile `ANTHROPIC_API_KEY`;
+altrimenti usa le regole. La chiave si dà come **secret di Codespaces**, mai in un file del repository:
+
+1. github.com/settings/codespaces → **Codespaces secrets**
+2. Se esiste già `ANTHROPIC_API_KEY` (es. per il process mining): **modifica** → *Repository access* →
+   aggiungi `maestranze-italia`. Altrimenti **New secret**: nome `ANTHROPIC_API_KEY`, valore la chiave,
+   repository `maestranze-italia` (e gli altri che la usano).
+3. Nel Codespace compare l'avviso per ricaricare: accetta (oppure fermalo e riaprilo da github.com/codespaces).
+4. Nel terminale: `bash .devcontainer/start.sh` → deve dire «LLM attivo».
+
+Prova su **Le Maison** con una frase: sotto la ricerca compare «Interpretato dall'LLM». Se invece dice
+come prima, nel terminale `grep "\[search\]" /tmp/maestranze-api.log | tail -3` mostra il motivo.
+
 ## Note
 
 - I link del Codespace sono **privati**: si aprono solo con il tuo account GitHub. Per mostrare il sito a
