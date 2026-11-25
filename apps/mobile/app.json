@@ -45,10 +45,7 @@
       "expo-font"
     ],
     "extra": {
-      "apiUrl": "http://localhost:4000",
-      "eas": {
-        "projectId": "SOSTITUIRE-CON-ID-PROGETTO-EAS"
-      }
+      "apiUrl": "http://localhost:4000"
     }
   }
 }

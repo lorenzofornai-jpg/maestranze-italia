@@ -1,6 +1,9 @@
 import Constants from "expo-constants";
 
-const BASE = ((Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl ?? "http://localhost:4000") + "/v1";
+// Indirizzo dell'API: EXPO_PUBLIC_API_URL (impostato dallo script del Codespace) oppure extra.apiUrl in app.json.
+const BASE =
+  (process.env.EXPO_PUBLIC_API_URL || (Constants.expoConfig?.extra as { apiUrl?: string } | undefined)?.apiUrl || "http://localhost:4000").replace(/\/$/, "") +
+  "/v1";
 
 export class ApiFailure extends Error {
   constructor(public code: string, public extra: Record<string, unknown> = {}) {

@@ -51,6 +51,28 @@ tail -f /tmp/maestranze-api.log      # log dell'API
 pnpm test                            # test automatici
 ```
 
+## 6. L'app sul telefono (Expo Go)
+
+Una prova dell'app mobile senza installarla: si apre dentro **Expo Go**.
+
+1. Sull'iPhone (o Android) installa **Expo Go** dall'App Store / Play Store.
+2. Nel terminale del Codespace:
+   ```bash
+   bash .devcontainer/mobile.sh
+   ```
+   Se lo script chiede di rendere pubblica la porta 4000: scheda **Porte** → riga 4000 (se manca,
+   «Aggiungi porta» → 4000) → clic destro → **Visibilità porta → Public**, poi rilancia lo script.
+3. Compare un QR code: inquadralo con la **Fotocamera** dell'iPhone e tocca «Apri in Expo Go».
+   Il primo caricamento richiede un minuto.
+4. Nell'app: **Accedi con email e password** (`chef@osteria.it`): il codice di prova compare nella schermata.
+   Il telefono si associa al profilo e da lì entri con Face ID.
+5. Prova l'approvazione: sul sito esci, accedi di nuovo e scegli **App Maestranze**. Apri l'app sul
+   telefono: trovi la richiesta, tocca **Approva** e conferma con Face ID.
+
+Limiti di Expo Go: le notifiche push non arrivano (le richieste si vedono aprendo l'app) e l'app resta
+disponibile finché il Codespace e lo script sono accesi. Con la porta 4000 pubblica l'API del Codespace è
+raggiungibile da internet: finita la prova, rimettila **Private**. Per l'installazione vera, vedi `TEST-SU-TELEFONO.md`.
+
 ## Note
 
 - I link del Codespace sono **privati**: si aprono solo con il tuo account GitHub. Per mostrare il sito a

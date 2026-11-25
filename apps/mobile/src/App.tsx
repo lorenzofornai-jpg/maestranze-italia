@@ -259,6 +259,7 @@ function Login({ onBack, onEnrolled }: { onBack: () => void; onEnrolled: (device
   const [password, setPassword] = useState("");
   const [challenge, setChallenge] = useState<LoginChallengeResponse | null>(null);
   const [code, setCode] = useState("");
+  const [devCode, setDevCode] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -292,7 +293,8 @@ function Login({ onBack, onEnrolled }: { onBack: () => void; onEnrolled: (device
               onPress={() =>
                 run(async () => {
                   const c = await api<LoginChallengeResponse>("/auth/login", { email, password });
-                  await api("/auth/mfa/sms", { loginToken: c.loginToken });
+                  const sms = await api<{ devCode?: string }>("/auth/mfa/sms", { loginToken: c.loginToken });
+                  setDevCode(sms.devCode ?? null);
                   setChallenge(c);
                 })
               }
@@ -301,6 +303,7 @@ function Login({ onBack, onEnrolled }: { onBack: () => void; onEnrolled: (device
         ) : (
           <View style={{ gap: 26, alignSelf: "stretch" }}>
             <Text style={[s.body, { color: colors.ink2 }]}>{t("login.sms", { phone: challenge.maskedPhone ?? "" })}</Text>
+            {devCode && <Text style={[s.body, { color: colors.accent }]}>{t("login.dev_code", { code: devCode })}</Text>}
             <Input label={t("login.code")} value={code} onChangeText={(v) => setCode(v.replace(/\D/g, "").slice(0, 6))} keyboardType="number-pad" autoComplete="one-time-code" big />
             {error && <Text style={s.error}>{error}</Text>}
             <Button
