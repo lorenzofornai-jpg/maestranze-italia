@@ -76,14 +76,19 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
       .catch(() => undefined);
   }, [signedIn]);
 
+  const [farDown, setFarDown] = useState(false);
   useEffect(() => {
-    const on = () => setScrolled(window.scrollY > 40);
+    const on = () => {
+      setScrolled(window.scrollY > 40);
+      setFarDown(window.scrollY > window.innerHeight * 0.9);
+    };
     on();
     window.addEventListener("scroll", on, { passive: true });
     return () => window.removeEventListener("scroll", on);
   }, []);
 
   return (
+    <>
     <header className={`site-header ${overlay ? "overlay" : ""} ${dark ? "dark" : ""} ${scrolled ? "scrolled" : ""}`}>
       <div className="wrap header-row">
         <nav className="header-nav left">
@@ -124,6 +129,23 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
         </nav>
       </div>
     </header>
+    <button
+      type="button"
+      className={`to-top ${farDown ? "show" : ""}`}
+      aria-label={t("nav.to_top")}
+      title={t("nav.to_top")}
+      tabIndex={farDown ? 0 : -1}
+      onClick={() => {
+        const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+        window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
+      }}
+    >
+      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" strokeWidth="1.2" />
+      </svg>
+    </button>
+    </>
   );
 }
 

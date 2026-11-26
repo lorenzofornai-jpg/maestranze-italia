@@ -11,6 +11,7 @@ const it = {
   "nav.signin": "Accedi",
   "nav.request": "Richiedi l'accesso",
   "nav.area": "Area riservata",
+  "nav.to_top": "Torna su",
 
   "hero.eyebrow": "Il saper fare italiano · su invito",
   "hero.title.1": "Dove il saper fare italiano",
@@ -249,6 +250,7 @@ const en: Record<keyof typeof it, string> = {
   "nav.signin": "Sign in",
   "nav.request": "Request access",
   "nav.area": "Private area",
+  "nav.to_top": "Back to top",
 
   "hero.eyebrow": "Italian craftsmanship · by invitation",
   "hero.title.1": "Where Italian craftsmanship",

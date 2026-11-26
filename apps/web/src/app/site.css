@@ -1054,11 +1054,38 @@ section {
 .header-nav.left a[aria-current="true"]::after {
   right: 0;
 }
-html {
-  scroll-behavior: smooth;
+/* Pulsante «torna su»: compare dopo aver scorso, discreto in basso a destra */
+.to-top {
+  position: fixed;
+  right: clamp(16px, 3vw, 36px);
+  bottom: clamp(16px, 3vw, 36px);
+  z-index: 40;
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
+  border: 1px solid var(--line-strong);
+  background: color-mix(in srgb, var(--paper) 92%, transparent);
+  -webkit-backdrop-filter: blur(8px);
+  backdrop-filter: blur(8px);
+  color: var(--ink);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+  opacity: 0;
+  transform: translateY(12px);
+  pointer-events: none;
+  transition: opacity 500ms var(--ease), transform 500ms var(--ease), border-color 400ms var(--ease), color 400ms var(--ease);
 }
-@media (prefers-reduced-motion: reduce) {
-  html {
-    scroll-behavior: auto;
-  }
+.to-top.show {
+  opacity: 1;
+  transform: none;
+  pointer-events: auto;
+}
+.to-top:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+}
+.to-top svg {
+  width: 16px;
+  height: 16px;
 }
