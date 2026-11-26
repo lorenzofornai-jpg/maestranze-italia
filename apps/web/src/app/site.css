@@ -52,8 +52,8 @@
   position: sticky;
   top: 0;
   z-index: 50;
-  background: color-mix(in srgb, var(--ivory) 92%, transparent);
-  backdrop-filter: blur(10px);
+  /* Sfondo pieno, senza sfocatura: Safari iOS ridisegna male le testate fisse con backdrop-filter */
+  background: color-mix(in srgb, var(--ivory) 97%, transparent);
   border-bottom: 1px solid var(--line);
   transition: background 600ms var(--ease), border-color 600ms var(--ease), padding 600ms var(--ease);
 }
@@ -63,11 +63,9 @@
   right: 0;
   background: transparent;
   border-color: transparent;
-  backdrop-filter: none;
 }
 .site-header.overlay.scrolled {
-  background: color-mix(in srgb, var(--ivory) 92%, transparent);
-  backdrop-filter: blur(10px);
+  background: color-mix(in srgb, var(--ivory) 97%, transparent);
   border-color: var(--line);
 }
 .header-row {
@@ -1032,15 +1030,6 @@ section {
   }
 }
 
-/* Testata fissa su un proprio livello: evita che Safari iOS la perda dopo uno scorrimento o un salto */
-.site-header {
-  -webkit-backdrop-filter: blur(10px);
-  transform: translateZ(0);
-  will-change: transform;
-}
-.site-header.overlay:not(.scrolled) {
-  -webkit-backdrop-filter: none;
-}
 /* Le sezioni raggiunte dalla testata non finiscono sotto di essa */
 #arti,
 #territori,
@@ -1064,9 +1053,7 @@ section {
   height: 52px;
   border-radius: 50%;
   border: 1px solid var(--line-strong);
-  background: color-mix(in srgb, var(--paper) 92%, transparent);
-  -webkit-backdrop-filter: blur(8px);
-  backdrop-filter: blur(8px);
+  background: color-mix(in srgb, var(--paper) 96%, transparent);
   color: var(--ink);
   display: grid;
   place-items: center;
