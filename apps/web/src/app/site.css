@@ -53,7 +53,7 @@
   top: 0;
   z-index: 50;
   /* Sfondo pieno, senza sfocatura: Safari iOS ridisegna male le testate fisse con backdrop-filter */
-  background: var(--ivory);
+  background: var(--header-bg);
   border-bottom: 1px solid var(--line);
   transition: background 600ms var(--ease), border-color 600ms var(--ease), padding 600ms var(--ease);
 }
@@ -61,11 +61,14 @@
   position: fixed;
   left: 0;
   right: 0;
+}
+/* Trasparente solo sopra le copertine scure delle Maison, finché non si scorre */
+.site-header.overlay.dark:not(.scrolled) {
   background: transparent;
   border-color: transparent;
 }
 .site-header.overlay.scrolled {
-  background: var(--ivory);
+  background: var(--header-bg);
   border-color: var(--line);
 }
 .header-row {

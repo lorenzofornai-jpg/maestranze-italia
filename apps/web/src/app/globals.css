@@ -7,6 +7,8 @@
   --ivory: #f4eee2;
   --paper: #faf6ee;
   --linen: #ebe3d3;
+  /* Testata: un tono appena più scuro dello sfondo della pagina */
+  --header-bg: #ece5d7;
   --ink: #1b1915;
   --ink-2: #3f3a31;
   --muted: #847a68;
