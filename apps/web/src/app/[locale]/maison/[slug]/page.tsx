@@ -156,7 +156,7 @@ export default async function MaisonPage({ params }: { params: Params }) {
               })}
             </div>
             <div style={{ marginTop: 80 }}>
-              <Link href={`/${locale}/esplora`} className="link">
+              <Link href={`/${locale}/maison`} className="link">
                 {t("maison.back")}
               </Link>
             </div>

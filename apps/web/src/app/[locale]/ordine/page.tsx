@@ -115,7 +115,7 @@ export default function CheckoutPage() {
                 {t("order.empty")}
               </p>
               <div>
-                <Link className="btn" href={`/${locale}/esplora`}>
+                <Link className="btn" href={`/${locale}/maison`}>
                   {t("order.explore")} <span className="arrow" />
                 </Link>
               </div>

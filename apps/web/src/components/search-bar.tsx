@@ -37,7 +37,7 @@ export function SearchBar({ initial = "" }: { initial?: string }) {
       params.set("q", query);
     }
     setInterpreting(false);
-    startTransition(() => router.push(`/${locale}/esplora?${params.toString()}`));
+    startTransition(() => router.push(`/${locale}/maison?${params.toString()}`));
   };
 
   return (

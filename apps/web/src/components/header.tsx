@@ -70,7 +70,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
           <Link href={`/${locale}/territori`} aria-current={current("territori")}>
             {t("nav.territories")}
           </Link>
-          <Link href={`/${locale}/esplora`} aria-current={current("maisons")}>
+          <Link href={`/${locale}/maison`} aria-current={current("maisons")}>
             {t("nav.maisons")}
           </Link>
         </nav>

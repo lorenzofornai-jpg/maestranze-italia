@@ -9,7 +9,11 @@ const config: NextConfig = {
     return [{ source: "/api/:path*", destination: `${API_URL}/:path*` }];
   },
   async redirects() {
-    return [{ source: "/", destination: "/it", permanent: false }];
+    return [
+      { source: "/", destination: "/it", permanent: false },
+      // La pagina delle Maison si chiamava «esplora»: i vecchi link (anche con filtri) continuano a funzionare.
+      { source: "/:locale(it|en)/esplora", destination: "/:locale/maison", permanent: true },
+    ];
   },
 };
 

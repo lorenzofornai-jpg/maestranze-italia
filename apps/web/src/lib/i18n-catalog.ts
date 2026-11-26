@@ -118,6 +118,8 @@ export const catalogIt = {
 
   // --- Esplora ---
   "explore.eyebrow": "Esplora",
+  "maisons.title": "Ogni Maison, scelta una per una.",
+  "maisons.body": "Cerca come lo diresti a un amico, oppure scegli un'Arte o un territorio.",
   "explore.title": "Cerca come lo diresti a un amico",
   "explore.placeholder": "Es. un caseificio in Irpinia per 40 kg di fiordilatte al mese",
   "explore.search": "Cerca",
@@ -365,6 +367,8 @@ export const catalogEn: Record<CatalogKey, string> = {
   "selection.done.REJECTED": "Application not accepted.",
 
   "explore.eyebrow": "Explore",
+  "maisons.title": "Every Maison, chosen one by one.",
+  "maisons.body": "Search the way you would ask a friend, or choose an Art or a territory.",
   "explore.title": "Search the way you would ask a friend",
   "explore.placeholder": "E.g. a dairy in Irpinia for 40 kg of fiordilatte a month",
   "explore.search": "Search",

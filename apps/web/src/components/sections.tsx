@@ -26,7 +26,7 @@ export function ArtsSection({ locale, counts, heading = "h2" }: { locale: Locale
             const n = counts?.[art.toUpperCase()];
             return (
               <Reveal key={art} delay={i * 110} as="article" className="art">
-                <Link href={`/${locale}/esplora?discipline=${art.toUpperCase()}`}>
+                <Link href={`/${locale}/maison?discipline=${art.toUpperCase()}`}>
                   <div className={`swatch swatch-${art}`}>
                     <span className="swatch-num">{ROMAN[i]}</span>
                   </div>
@@ -64,7 +64,7 @@ export function TerritoriesSection({ locale, counts, heading = "h2" }: { locale:
               const n = counts?.[region];
               return (
                 <li key={region} className={counts && !n ? "empty" : undefined}>
-                  <Link href={`/${locale}/esplora?region=${encodeURIComponent(region)}`}>
+                  <Link href={`/${locale}/maison?region=${encodeURIComponent(region)}`}>
                     <span className="region-n">{String(i + 1).padStart(2, "0")}</span>
                     <span className="region-name">{region}</span>
                     <span className="region-p">

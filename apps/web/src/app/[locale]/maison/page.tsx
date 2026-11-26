@@ -11,7 +11,7 @@ type SP = Promise<Record<string, string | string[] | undefined>>;
 
 export async function generateMetadata({ params }: { params: Promise<{ locale: string }> }): Promise<Metadata> {
   const { locale } = await params;
-  return { title: translate(isLocale(locale) ? locale : "it", "explore.eyebrow") };
+  return { title: translate(isLocale(locale) ? locale : "it", "nav.maisons") };
 }
 
 const FILTERS = ["q", "discipline", "region", "province", "city", "cert", "page"] as const;
@@ -38,7 +38,7 @@ export default async function Explore({ params, searchParams }: { params: Promis
       else next.delete(k);
     }
     const s = next.toString();
-    return `/${locale}/esplora${s ? `?${s}` : ""}`;
+    return `/${locale}/maison${s ? `?${s}` : ""}`;
   };
 
   const [data, tree] = await Promise.all([
@@ -62,10 +62,13 @@ export default async function Explore({ params, searchParams }: { params: Promis
       <main className="explore">
         <section className="explore-head">
           <div className="wrap">
-            <span className="eyebrow rise">{t("explore.eyebrow")}</span>
+            <span className="eyebrow rise">{t("nav.maisons")}</span>
             <h1 className="display h2 rise" style={{ animationDelay: "150ms" }}>
-              {t("explore.title")}
+              {t("maisons.title")}
             </h1>
+            <p className="lead rise" style={{ animationDelay: "250ms" }}>
+              {t("maisons.body")}
+            </p>
             <div className="rise" style={{ animationDelay: "300ms" }}>
               <SearchBar initial={one("frase") ?? ""} />
             </div>
@@ -129,7 +132,7 @@ export default async function Explore({ params, searchParams }: { params: Promis
                 {one("q") && <span className="italic"> · «{one("q")}»</span>}
               </span>
               {hasFilters && (
-                <Link href={`/${locale}/esplora`} className="link">
+                <Link href={`/${locale}/maison`} className="link">
                   {t("explore.clear")}
                 </Link>
               )}
