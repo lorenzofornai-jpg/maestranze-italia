@@ -1,10 +1,9 @@
 import Link from "next/link";
-import { REGIONS } from "@maestranze/shared";
 import { Monogram } from "@/components/brand";
 import { Footer, Header } from "@/components/header";
-import { ARTS, HeroPlate } from "@/components/plate";
+import { HeroPlate } from "@/components/plate";
 import { Reveal } from "@/components/reveal";
-import { SearchBar } from "@/components/search-bar";
+import { ArtsSection, TerritoriesSection } from "@/components/sections";
 import { isLocale, translate, type MessageKey } from "@/lib/i18n";
 
 const ROMAN = ["I", "II", "III", "IV", "V"];
@@ -43,7 +42,7 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                 <Link href={`/${locale}/registrati`} className="btn">
                   {t("hero.cta.request")} <span className="arrow" />
                 </Link>
-                <Link href={`/${locale}#arti`} className="link">
+                <Link href={`/${locale}/arti`} className="link">
                   {t("hero.cta.discover")}
                 </Link>
               </div>
@@ -85,55 +84,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
           </div>
         </section>
 
-        {/* --- Le Arti -------------------------------------------------------------------- */}
-        <section className="arts" id="arti">
-          <div className="wrap">
-            <Reveal className="section-head">
-              <span className="eyebrow">{t("arts.eyebrow")}</span>
-              <h2 className="display h2">{t("arts.title")}</h2>
-            </Reveal>
-            <div className="arts-grid">
-              {ARTS.map((art, i) => (
-                <Reveal key={art} delay={i * 110} as="article" className="art">
-                  <Link href={`/${locale}/esplora?discipline=${art.toUpperCase()}`}>
-                    <div className={`swatch swatch-${art}`}>
-                      <span className="swatch-num">{ROMAN[i]}</span>
-                    </div>
-                    <h3 className="display">{t(`arts.${art}`)}</h3>
-                    <p className="italic">{t(`arts.${art}.material`)}</p>
-                  </Link>
-                </Reveal>
-              ))}
-            </div>
-          </div>
-        </section>
-
-        {/* --- Territori ------------------------------------------------------------------ */}
-        <section className="territories" id="territori">
-          <div className="wrap territories-grid">
-            <Reveal className="territories-intro">
-              <span className="eyebrow">{t("territories.eyebrow")}</span>
-              <h2 className="display h2">{t("territories.title")}</h2>
-              <p className="lead">{t("territories.body")}</p>
-              <div style={{ marginTop: 12 }}>
-                <SearchBar />
-              </div>
-            </Reveal>
-            <Reveal delay={150} className="regions">
-              <ol>
-                {Object.entries(REGIONS).map(([region, provinces], i) => (
-                  <li key={region}>
-                    <Link href={`/${locale}/esplora?region=${encodeURIComponent(region)}`}>
-                      <span className="region-n">{String(i + 1).padStart(2, "0")}</span>
-                      <span className="region-name">{region}</span>
-                      <span className="region-p">{provinces.map(([c]) => c).join(" · ")}</span>
-                    </Link>
-                  </li>
-                ))}
-              </ol>
-            </Reveal>
-          </div>
-        </section>
+        {/* --- Le Arti e i Territori: anteprime delle pagine dedicate --- */}
+        <ArtsSection locale={locale} />
+        <TerritoriesSection locale={locale} />
 
         {/* --- Il patto ------------------------------------------------------------------- */}
         <section className="pact" id="patto">

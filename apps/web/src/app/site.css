@@ -53,7 +53,7 @@
   top: 0;
   z-index: 50;
   /* Sfondo pieno, senza sfocatura: Safari iOS ridisegna male le testate fisse con backdrop-filter */
-  background: color-mix(in srgb, var(--ivory) 97%, transparent);
+  background: var(--ivory);
   border-bottom: 1px solid var(--line);
   transition: background 600ms var(--ease), border-color 600ms var(--ease), padding 600ms var(--ease);
 }
@@ -65,7 +65,7 @@
   border-color: transparent;
 }
 .site-header.overlay.scrolled {
-  background: color-mix(in srgb, var(--ivory) 97%, transparent);
+  background: var(--ivory);
   border-color: var(--line);
 }
 .header-row {
@@ -1030,12 +1030,6 @@ section {
   }
 }
 
-/* Le sezioni raggiunte dalla testata non finiscono sotto di essa */
-#arti,
-#territori,
-#patto {
-  scroll-margin-top: 72px;
-}
 /* Voce della sezione in cui ci si trova: filetto fisso e colore d'accento */
 .header-nav.left a[aria-current="true"] {
   color: var(--accent);
@@ -1075,4 +1069,33 @@ section {
 .to-top svg {
   width: 16px;
   height: 16px;
+}
+
+/* Pagine dedicate (Le Arti, Territori): la sezione occupa tutta la pagina, con meno aria in alto */
+.section-page .arts,
+.section-page .territories {
+  padding-top: clamp(56px, 8vw, 110px);
+  border-top: 0;
+  min-height: calc(100svh - 92px);
+}
+.art-count {
+  display: block;
+  margin-top: 8px;
+  letter-spacing: 0.08em;
+}
+.regions li.empty {
+  opacity: 0.55;
+}
+.regions li.empty:hover {
+  opacity: 1;
+}
+/* Con il conteggio delle Maison il dato a destra è sempre visibile */
+.section-page .region-p {
+  opacity: 1;
+  transform: none;
+}
+@media (max-width: 900px) {
+  .section-page .region-p {
+    display: block;
+  }
 }

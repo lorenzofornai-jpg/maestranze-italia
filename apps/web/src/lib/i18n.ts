@@ -12,6 +12,8 @@ const it = {
   "nav.request": "Richiedi l'accesso",
   "nav.area": "Area riservata",
   "nav.to_top": "Torna su",
+  "count.maisons": "{n} Maison",
+  "count.maisons.one": "1 Maison",
 
   "hero.eyebrow": "Il saper fare italiano · su invito",
   "hero.title.1": "Dove il saper fare italiano",
@@ -251,6 +253,8 @@ const en: Record<keyof typeof it, string> = {
   "nav.request": "Request access",
   "nav.area": "Private area",
   "nav.to_top": "Back to top",
+  "count.maisons": "{n} Maisons",
+  "count.maisons.one": "1 Maison",
 
   "hero.eyebrow": "Italian craftsmanship · by invitation",
   "hero.title.1": "Where Italian craftsmanship",
