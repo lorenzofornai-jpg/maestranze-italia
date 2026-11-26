@@ -1031,3 +1031,34 @@ section {
     display: none;
   }
 }
+
+/* Testata fissa su un proprio livello: evita che Safari iOS la perda dopo uno scorrimento o un salto */
+.site-header {
+  -webkit-backdrop-filter: blur(10px);
+  transform: translateZ(0);
+  will-change: transform;
+}
+.site-header.overlay:not(.scrolled) {
+  -webkit-backdrop-filter: none;
+}
+/* Le sezioni raggiunte dalla testata non finiscono sotto di essa */
+#arti,
+#territori,
+#patto {
+  scroll-margin-top: 72px;
+}
+/* Voce della sezione in cui ci si trova: filetto fisso e colore d'accento */
+.header-nav.left a[aria-current="true"] {
+  color: var(--accent);
+}
+.header-nav.left a[aria-current="true"]::after {
+  right: 0;
+}
+html {
+  scroll-behavior: smooth;
+}
+@media (prefers-reduced-motion: reduce) {
+  html {
+    scroll-behavior: auto;
+  }
+}

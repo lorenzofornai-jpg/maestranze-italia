@@ -31,7 +31,42 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
   const t = useT();
   const [scrolled, setScrolled] = useState(false);
   const [session, setSession] = useState(signedIn);
+  const [section, setSection] = useState<"arti" | "territori" | null>(null);
   const { count } = useCart();
+  const pathname = usePathname() ?? "";
+  const onHome = /^\/(it|en)\/?$/.test(pathname);
+
+  // Sezione evidenziata nella testata: sulla home quella sotto gli occhi, altrove la pagina.
+  useEffect(() => {
+    if (!onHome) return setSection(null);
+    const ids = ["arti", "territori"] as const;
+    const visible = new Map<string, boolean>();
+    const io = new IntersectionObserver(
+      (entries) => {
+        for (const e of entries) visible.set(e.target.id, e.isIntersecting);
+        setSection(ids.find((id) => visible.get(id)) ?? null);
+      },
+      // Conta la fascia centrale dello schermo: la sezione «attiva» è quella che si sta leggendo.
+      { rootMargin: "-40% 0px -55% 0px" },
+    );
+    for (const id of ids) {
+      const el = document.getElementById(id);
+      if (el) io.observe(el);
+    }
+    return () => io.disconnect();
+  }, [onHome]);
+
+  /** Sulla home le voci scorrono fino alla sezione invece di saltare (il salto fa sparire la testata su Safari iOS). */
+  const goTo = (id: "arti" | "territori") => (e: React.MouseEvent) => {
+    if (!onHome) return;
+    const el = document.getElementById(id);
+    if (!el) return;
+    e.preventDefault();
+    el.scrollIntoView({ behavior: "smooth", block: "start" });
+    history.replaceState(null, "", `#${id}`);
+  };
+  const current = (key: "arti" | "territori" | "maisons") =>
+    (key === "maisons" ? /\/(esplora|maison)(\/|$)/.test(pathname) : section === key) ? "true" : undefined;
 
   // Sulle pagine pubbliche la testata scopre da sola se c'è una sessione aperta.
   useEffect(() => {
@@ -52,9 +87,15 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
     <header className={`site-header ${overlay ? "overlay" : ""} ${dark ? "dark" : ""} ${scrolled ? "scrolled" : ""}`}>
       <div className="wrap header-row">
         <nav className="header-nav left">
-          <Link href={`/${locale}#arti`}>{t("nav.arts")}</Link>
-          <Link href={`/${locale}#territori`}>{t("nav.territories")}</Link>
-          <Link href={`/${locale}/esplora`}>{t("nav.maisons")}</Link>
+          <Link href={`/${locale}#arti`} onClick={goTo("arti")} aria-current={current("arti")}>
+            {t("nav.arts")}
+          </Link>
+          <Link href={`/${locale}#territori`} onClick={goTo("territori")} aria-current={current("territori")}>
+            {t("nav.territories")}
+          </Link>
+          <Link href={`/${locale}/esplora`} aria-current={current("maisons")}>
+            {t("nav.maisons")}
+          </Link>
         </nav>
         <Wordmark locale={locale} />
         <nav className="header-nav right">
