@@ -20,17 +20,30 @@ fi
 if [ -n "${CODESPACE_NAME:-}" ]; then
   # Il telefono non ha l'accesso GitHub: la porta dell'API deve essere pubblica.
   gh codespace ports visibility 4000:public -c "$CODESPACE_NAME" >/dev/null 2>&1 || true
-  STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 10 "$API_URL/health")
-  if [ "$STATUS" != "200" ]; then
+  # Subito dopo un avvio l'inoltro può rispondere 502 per qualche secondo: si riprova.
+  for _ in $(seq 1 10); do
+    STATUS=$(curl -s -o /dev/null -w "%{http_code}" -m 10 "$API_URL/health")
+    [ "$STATUS" = "200" ] && break
+    sleep 3
+  done
+  if [ "$STATUS" = "302" ] || [ "$STATUS" = "401" ] || [ "$STATUS" = "403" ]; then
     cat <<MSG
 
-⚠  Il telefono non raggiunge ancora l'API (${API_URL} → ${STATUS}).
+⚠  La porta 4000 è privata: il telefono non può raggiungere l'API (${STATUS}).
    Nella scheda «Porte»:
      1. se manca la riga 4000: «Aggiungi porta» → scrivi 4000 → Invio
-     2. clic destro sulla riga 4000 → «Visibilità porta» → «Public»
+     2. sulla riga 4000: clic destro (su iPad: tieni premuto) → «Visibilità porta» → «Public»
    Poi rilancia: bash .devcontainer/mobile.sh
 
 MSG
+    exit 1
+  elif [ "$STATUS" != "200" ]; then
+    echo ""
+    echo "⚠  La porta 4000 è pubblica, ma l'API non risponde (${STATUS}). Ultime righe del suo log:"
+    echo ""
+    tail -n 15 /tmp/maestranze-api.log 2>/dev/null || echo "   (nessun log: l'API non è mai partita)"
+    echo ""
+    echo "   Riavvia tutto con: bash .devcontainer/start.sh   poi, dopo un minuto: bash .devcontainer/mobile.sh"
     exit 1
   fi
 fi
