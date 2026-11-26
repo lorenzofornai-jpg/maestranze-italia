@@ -12,6 +12,7 @@ const it = {
   "nav.request": "Richiedi l'accesso",
   "nav.area": "Area riservata",
   "nav.to_top": "Torna su",
+  "nav.to_home": "Torna alla home",
   "count.maisons": "{n} Maison",
   "count.maisons.one": "1 Maison",
 
@@ -253,6 +254,7 @@ const en: Record<keyof typeof it, string> = {
   "nav.request": "Request access",
   "nav.area": "Private area",
   "nav.to_top": "Back to top",
+  "nav.to_home": "Back to home",
   "count.maisons": "{n} Maisons",
   "count.maisons.one": "1 Maison",
 

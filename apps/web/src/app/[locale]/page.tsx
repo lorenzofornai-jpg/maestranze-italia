@@ -3,7 +3,6 @@ import { Monogram } from "@/components/brand";
 import { Footer, Header } from "@/components/header";
 import { HeroPlate } from "@/components/plate";
 import { Reveal } from "@/components/reveal";
-import { ArtsSection, TerritoriesSection } from "@/components/sections";
 import { isLocale, translate, type MessageKey } from "@/lib/i18n";
 
 const ROMAN = ["I", "II", "III", "IV", "V"];
@@ -80,10 +79,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
             </div>
           </div>
         </section>
-
-        {/* --- Le Arti e i Territori: anteprime delle pagine dedicate --- */}
-        <ArtsSection locale={locale} />
-        <TerritoriesSection locale={locale} />
 
         {/* --- Il patto ------------------------------------------------------------------- */}
         <section className="pact" id="patto">

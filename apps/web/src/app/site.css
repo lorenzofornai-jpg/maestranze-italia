@@ -1101,24 +1101,3 @@ section {
   }
 }
 
-/* Percorso in cima alle pagine dedicate: «Home / Le Arti» */
-.crumbs {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  font-size: 11px;
-  letter-spacing: 0.22em;
-  text-transform: uppercase;
-  color: var(--muted);
-  margin-bottom: 28px;
-}
-.crumbs a {
-  color: var(--ink);
-  border-bottom: 1px solid var(--line-strong);
-  padding-bottom: 2px;
-  transition: color 400ms var(--ease), border-color 400ms var(--ease);
-}
-.crumbs a:hover {
-  color: var(--accent);
-  border-color: var(--accent);
-}

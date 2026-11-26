@@ -7,17 +7,6 @@ import { SearchBar } from "./search-bar";
 
 const ROMAN = ["I", "II", "III", "IV", "V"];
 
-/** «Home / Sezione»: sulle pagine dedicate, per tornare alla home in un tocco. */
-export function Crumbs({ locale, label }: { locale: Locale; label: string }) {
-  return (
-    <nav className="crumbs" aria-label="Percorso">
-      <Link href={`/${locale}`}>Home</Link>
-      <span aria-hidden="true">/</span>
-      <span aria-current="page">{label}</span>
-    </nav>
-  );
-}
-
 /** Conteggio «n Maison» nella lingua attiva. */
 const countLabel = (locale: Locale, n: number) => translate(locale, n === 1 ? "count.maisons.one" : "count.maisons", { n });
 
@@ -28,7 +17,6 @@ export function ArtsSection({ locale, counts, heading = "h2" }: { locale: Locale
   return (
     <section className="arts" id="arti">
       <div className="wrap">
-        {heading === "h1" && <Crumbs locale={locale} label={t("nav.arts")} />}
         <Reveal className="section-head">
           <span className="eyebrow">{t("arts.eyebrow")}</span>
           <H className="display h2">{t("arts.title")}</H>
@@ -63,7 +51,6 @@ export function TerritoriesSection({ locale, counts, heading = "h2" }: { locale:
     <section className="territories" id="territori">
       <div className="wrap territories-grid">
         <Reveal className="territories-intro">
-          {heading === "h1" && <Crumbs locale={locale} label={t("nav.territories")} />}
           <span className="eyebrow">{t("territories.eyebrow")}</span>
           <H className="display h2">{t("territories.title")}</H>
           <p className="lead">{t("territories.body")}</p>

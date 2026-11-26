@@ -33,6 +33,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
   const [session, setSession] = useState(signedIn);
   const { count } = useCart();
   const pathname = usePathname() ?? "";
+  const onHome = /^\/(it|en)\/?$/.test(pathname);
   /** Voce della pagina in cui ci si trova: Le Arti, Territori, Le Maison (esplorazione e singole Maison). */
   const current = (key: "arti" | "territori" | "maisons") => {
     const re = key === "maisons" ? /^\/(it|en)\/(esplora|maison)(\/|$)/ : new RegExp(`^/(it|en)/${key}(/|$)`);
@@ -100,22 +101,30 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
         </nav>
       </div>
     </header>
-    <button
-      type="button"
-      className={`to-top ${farDown ? "show" : ""}`}
-      aria-label={t("nav.to_top")}
-      title={t("nav.to_top")}
-      tabIndex={farDown ? 0 : -1}
-      onClick={() => {
-        const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-        window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
-        if (location.hash) history.replaceState(null, "", location.pathname + location.search);
-      }}
-    >
-      <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" strokeWidth="1.2" />
-      </svg>
-    </button>
+    {/* Freccia in basso a destra: sulle altre pagine riporta alla home (sempre visibile), sulla home torna su */}
+    {onHome ? (
+      <button
+        type="button"
+        className={`to-top ${farDown ? "show" : ""}`}
+        aria-label={t("nav.to_top")}
+        title={t("nav.to_top")}
+        tabIndex={farDown ? 0 : -1}
+        onClick={() => {
+          const smooth = !window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+          window.scrollTo({ top: 0, behavior: smooth ? "smooth" : "auto" });
+        }}
+      >
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M8 13V3M3.5 7.5 8 3l4.5 4.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </button>
+    ) : (
+      <Link href={`/${locale}`} className="to-top show" aria-label={t("nav.to_home")} title={t("nav.to_home")}>
+        <svg viewBox="0 0 16 16" fill="none" aria-hidden="true">
+          <path d="M13 8H3M7.5 3.5 3 8l4.5 4.5" stroke="currentColor" strokeWidth="1.2" />
+        </svg>
+      </Link>
+    )}
     </>
   );
 }

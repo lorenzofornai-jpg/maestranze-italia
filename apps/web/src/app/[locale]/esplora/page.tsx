@@ -4,7 +4,6 @@ import { DISCIPLINES, REGIONS, pick, type SearchResult, type Territory } from "@
 import { Footer, Header } from "@/components/header";
 import { Reveal } from "@/components/reveal";
 import { SearchBar } from "@/components/search-bar";
-import { Crumbs } from "@/components/sections";
 import { isLocale, translate } from "@/lib/i18n";
 import { mediaUrl, serverApi } from "@/lib/server-api";
 
@@ -63,7 +62,6 @@ export default async function Explore({ params, searchParams }: { params: Promis
       <main className="explore">
         <section className="explore-head">
           <div className="wrap">
-            <Crumbs locale={locale} label={t("nav.maisons")} />
             <span className="eyebrow rise">{t("explore.eyebrow")}</span>
             <h1 className="display h2 rise" style={{ animationDelay: "150ms" }}>
               {t("explore.title")}
