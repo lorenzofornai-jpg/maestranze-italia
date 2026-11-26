@@ -538,9 +538,10 @@
 }
 .search-bar {
   display: flex;
-  gap: 0;
+  gap: 18px;
   border-bottom: 1px solid var(--ink);
-  align-items: stretch;
+  align-items: center;
+  padding-bottom: 10px;
 }
 .search-bar input {
   flex: 1;
@@ -551,6 +552,7 @@
   font-size: clamp(20px, 2.2vw, 30px);
   padding: 14px 0;
   color: var(--ink);
+  text-overflow: ellipsis;
 }
 .search-bar input::placeholder {
   color: #b2a68f;
@@ -560,7 +562,51 @@
   outline: none;
 }
 .search-bar .btn {
-  align-self: center;
+  flex: none;
+  min-width: 150px;
+}
+.search-bar input:disabled {
+  opacity: 0.55;
+}
+/* Attesa del risultato: rotellina nel pulsante e riga di stato sotto la barra */
+.spinner {
+  width: 14px;
+  height: 14px;
+  border: 1.5px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: spin 800ms linear infinite;
+}
+@keyframes spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+.search-status {
+  margin: 12px 0 0;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 18px;
+  color: var(--ink-2);
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.search-status::before {
+  content: "";
+  width: 40px;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--accent), transparent);
+  background-size: 200% 100%;
+  animation: shimmer 1.2s linear infinite;
+}
+@keyframes shimmer {
+  from {
+    background-position: 200% 0;
+  }
+  to {
+    background-position: -200% 0;
+  }
 }
 @media (max-width: 620px) {
   .search-bar {
@@ -910,4 +956,9 @@
 }
 .totals dd {
   padding-left: 20px;
+}
+/* Durante la ricerca il pulsante resta scuro: sta lavorando, non è spento */
+.search-bar[aria-busy="true"] .btn:disabled {
+  opacity: 1;
+  cursor: progress;
 }

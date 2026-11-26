@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, type FormEvent } from "react";
+import { useState, useTransition, type FormEvent } from "react";
 import type { Interpretation } from "@maestranze/shared";
 import { api } from "@/lib/api";
 import { useLocale, useT } from "@/lib/i18n-client";
@@ -15,13 +15,16 @@ export function SearchBar({ initial = "" }: { initial?: string }) {
   const locale = useLocale();
   const router = useRouter();
   const [text, setText] = useState(initial);
-  const [busy, setBusy] = useState(false);
+  const [interpreting, setInterpreting] = useState(false);
+  // La navigazione verso i risultati resta «in corso» finché la nuova pagina non è pronta.
+  const [navigating, startTransition] = useTransition();
+  const busy = interpreting || navigating;
 
   const submit = async (e: FormEvent) => {
     e.preventDefault();
     const query = text.trim();
-    if (query.length < 2) return;
-    setBusy(true);
+    if (query.length < 2 || busy) return;
+    setInterpreting(true);
     const params = new URLSearchParams();
     try {
       const r = await api<Interpretation>("/search/interpret", { body: { query } });
@@ -33,22 +36,38 @@ export function SearchBar({ initial = "" }: { initial?: string }) {
     } catch {
       params.set("q", query);
     }
-    router.push(`/${locale}/esplora?${params.toString()}`);
-    setBusy(false);
+    setInterpreting(false);
+    startTransition(() => router.push(`/${locale}/esplora?${params.toString()}`));
   };
 
   return (
-    <form className="search-bar" onSubmit={submit} role="search">
-      <input
-        value={text}
-        onChange={(e) => setText(e.target.value)}
-        placeholder={t("explore.placeholder")}
-        aria-label={t("explore.search")}
-        maxLength={300}
-      />
-      <button className="btn" disabled={busy}>
-        {t("explore.search")} <span className="arrow" />
-      </button>
-    </form>
+    <div>
+      <form className="search-bar" onSubmit={submit} role="search" aria-busy={busy}>
+        <input
+          value={text}
+          onChange={(e) => setText(e.target.value)}
+          placeholder={t("explore.placeholder")}
+          aria-label={t("explore.search")}
+          maxLength={300}
+          disabled={busy}
+        />
+        <button className="btn" disabled={busy}>
+          {busy ? (
+            <>
+              <span className="spinner" aria-hidden="true" /> {t("explore.searching")}
+            </>
+          ) : (
+            <>
+              {t("explore.search")} <span className="arrow" />
+            </>
+          )}
+        </button>
+      </form>
+      {busy && (
+        <p className="search-status" role="status" aria-live="polite">
+          {t(interpreting ? "explore.searching.reading" : "explore.searching.results")}
+        </p>
+      )}
+    </div>
   );
 }
