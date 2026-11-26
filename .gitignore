@@ -10,3 +10,7 @@ coverage/
 next-env.d.ts
 *.tsbuildinfo
 uploads/
+
+# Il progetto usa pnpm (pnpm-lock.yaml): i lock di npm/yarn non servono
+package-lock.json
+yarn.lock
