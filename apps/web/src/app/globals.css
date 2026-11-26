@@ -441,3 +441,10 @@ img {
     transform: none;
   }
 }
+
+/* Niente «effetto elastico» oltre l'inizio e la fine della pagina (Safari mostrava avorio sotto il
+   piè di pagina scuro, come se la pagina continuasse). */
+html,
+body {
+  overscroll-behavior-y: none;
+}
