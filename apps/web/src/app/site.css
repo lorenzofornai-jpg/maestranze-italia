@@ -160,12 +160,13 @@
 /* --- Apertura -------------------------------------------------------------------------------- */
 
 .hero {
-  min-height: 100svh;
+  /* L'apertura occupa solo lo spazio che le serve: la sezione successiva si affaccia subito sotto */
+  min-height: 0;
   position: relative;
   display: flex;
   /* Il contenuto parte poco sotto la testata (alta 92px) e sta tutto nella prima schermata. */
   align-items: flex-start;
-  padding: calc(92px + clamp(28px, 7vh, 72px)) 0 clamp(40px, 7vh, 90px);
+  padding: calc(92px + clamp(28px, 7vh, 72px)) 0 clamp(48px, 8vh, 96px);
   background:
     radial-gradient(ellipse 60% 50% at 85% 30%, rgba(147, 67, 42, 0.07), transparent 70%),
     linear-gradient(180deg, var(--paper), var(--ivory));
@@ -295,7 +296,7 @@ section {
   display: flex;
   flex-direction: column;
   gap: 22px;
-  margin-bottom: clamp(48px, 7vw, 96px);
+  margin-bottom: clamp(36px, 5vw, 72px);
   max-width: 860px;
 }
 .section-head.center {
@@ -306,7 +307,7 @@ section {
 }
 
 .worlds {
-  padding: clamp(96px, 12vw, 180px) 0;
+  padding: clamp(64px, 8vw, 120px) 0;
   background: var(--ivory);
 }
 .worlds-grid {
@@ -359,7 +360,7 @@ section {
 /* --- Le Arti: campioni di materia ------------------------------------------------------------ */
 
 .arts {
-  padding: clamp(96px, 12vw, 180px) 0;
+  padding: clamp(64px, 8vw, 120px) 0;
   background: var(--paper);
   border-top: 1px solid var(--line);
 }
@@ -467,7 +468,7 @@ section {
 /* --- Territori ------------------------------------------------------------------------------- */
 
 .territories {
-  padding: clamp(96px, 12vw, 180px) 0;
+  padding: clamp(64px, 8vw, 120px) 0;
   background: var(--ivory);
   border-top: 1px solid var(--line);
 }
@@ -550,7 +551,7 @@ section {
 /* --- Il patto (sezione scura) ---------------------------------------------------------------- */
 
 .pact {
-  padding: clamp(96px, 12vw, 180px) 0;
+  padding: clamp(64px, 8vw, 120px) 0;
   background: var(--ink);
   color: var(--paper);
 }
@@ -1098,4 +1099,26 @@ section {
   .section-page .region-p {
     display: block;
   }
+}
+
+/* Percorso in cima alle pagine dedicate: «Home / Le Arti» */
+.crumbs {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  font-size: 11px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--muted);
+  margin-bottom: 28px;
+}
+.crumbs a {
+  color: var(--ink);
+  border-bottom: 1px solid var(--line-strong);
+  padding-bottom: 2px;
+  transition: color 400ms var(--ease), border-color 400ms var(--ease);
+}
+.crumbs a:hover {
+  color: var(--accent);
+  border-color: var(--accent);
 }

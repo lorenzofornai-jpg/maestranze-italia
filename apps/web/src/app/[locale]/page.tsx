@@ -55,9 +55,6 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
               </figcaption>
             </figure>
           </div>
-          <div className="hero-scroll" aria-hidden="true">
-            <span />
-          </div>
         </section>
 
         {/* --- Due mondi ------------------------------------------------------------------ */}

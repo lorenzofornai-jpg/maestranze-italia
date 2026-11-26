@@ -20,10 +20,24 @@ export function Reveal({ children, delay = 0, as: Tag = "div", className = "" }:
           io.disconnect();
         }
       },
-      { threshold: 0.12 },
+      // Basta che l'elemento entri nello schermo (anche se molto alto, come l'elenco delle regioni).
+      { threshold: 0, rootMargin: "0px 0px -8% 0px" },
     );
     io.observe(el);
-    return () => io.disconnect();
+    // Rete di sicurezza: se il browser non segnala l'ingresso (alcuni Safari), si controlla durante lo scorrimento.
+    const check = () => {
+      const r = el.getBoundingClientRect();
+      if (r.top < window.innerHeight * 0.95 && r.bottom > 0) {
+        el.classList.add("in");
+        window.removeEventListener("scroll", check);
+      }
+    };
+    window.addEventListener("scroll", check, { passive: true });
+    check();
+    return () => {
+      io.disconnect();
+      window.removeEventListener("scroll", check);
+    };
   }, []);
   return (
     // @ts-expect-error: ref generico su tag dinamico

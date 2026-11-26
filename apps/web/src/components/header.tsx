@@ -51,7 +51,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
   useEffect(() => {
     const on = () => {
       setScrolled(window.scrollY > 40);
-      setFarDown(window.scrollY > window.innerHeight * 0.9);
+      setFarDown(window.scrollY > 160);
     };
     on();
     window.addEventListener("scroll", on, { passive: true });
