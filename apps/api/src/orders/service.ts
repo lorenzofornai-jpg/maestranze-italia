@@ -1,5 +1,5 @@
 import { randomBytes } from "node:crypto";
-import { and, asc, desc, eq, gte, inArray, lt, sql } from "drizzle-orm";
+import { and, asc, desc, eq, gte, inArray, isNull, lt, sql } from "drizzle-orm";
 import {
   AUTO_RELEASE_DAYS,
   formatEuro,
@@ -24,6 +24,7 @@ import {
   type Account,
   type Maison,
   type Order,
+  type ShippingAddress,
 } from "../db/schema";
 import { ApiError, Errors } from "../lib/errors";
 import { renderEmail, type Notifier } from "../lib/notifications";
@@ -81,6 +82,9 @@ const T = {
 const tx = (l: string) => (l === "en" ? T.en : T.it);
 
 export class OrderService {
+  /** Avvisato quando viene pagata una tappa di una commissione su misura (acconto o saldo). */
+  onCommissionPaid: (order: Order) => Promise<void> = async () => {};
+
   constructor(
     private db: Db,
     private config: Config,
@@ -267,7 +271,8 @@ export class OrderService {
     const maison = (await this.db.query.maisons.findFirst({ where: eq(maisons.id, order.maisonId) }))!;
     const owner = await this.db.query.accounts.findFirst({ where: eq(accounts.id, maison.accountId) });
     const buyer = await this.db.query.accounts.findFirst({ where: eq(accounts.id, order.buyerAccountId) });
-    if (owner && buyer) {
+    if (order.commissionId) await this.onCommissionPaid({ ...order, status: "PAID", paymentRef: chargeRef });
+    else if (owner && buyer) {
       const t = tx(owner.locale);
       await this.mail(owner, order, t.newOrder(order.number), t.newOrderBody(order.number, formatEuro(order.totalCents, owner.locale), buyer.companyName ?? `${buyer.firstName} ${buyer.lastName}`));
     }
@@ -316,8 +321,14 @@ export class OrderService {
     throw new ApiError(409, "ORDER_INVALID_STATE");
   }
 
+  /** Le tappe delle commissioni su misura si muovono solo dall'Atelier. */
+  private catalogOnly(order: Order) {
+    if (order.commissionId) this.stateError();
+  }
+
   async accept(maker: Account, orderId: string) {
     const order = await this.makerOrder(maker, orderId);
+    this.catalogOnly(order);
     if (!(await this.transition(order.id, ["PAID"], "ACCEPTED", "MAKER", null))) this.stateError();
     const buyer = (await this.db.query.accounts.findFirst({ where: eq(accounts.id, order.buyerAccountId) }))!;
     const maison = (await this.db.query.maisons.findFirst({ where: eq(maisons.id, order.maisonId) }))!;
@@ -328,6 +339,7 @@ export class OrderService {
 
   async decline(maker: Account, orderId: string, note: unknown) {
     const order = await this.makerOrder(maker, orderId);
+    this.catalogOnly(order);
     if (order.status !== "PAID") this.stateError();
     await this.refundAndClose(order, "CANCELLED", "MAKER", typeof note === "string" ? note.slice(0, 500) : null);
     return this.view(maker, order.id);
@@ -335,13 +347,18 @@ export class OrderService {
 
   async ship(maker: Account, orderId: string, input: { carrier?: unknown; trackingCode?: unknown }) {
     const order = await this.makerOrder(maker, orderId);
+    this.catalogOnly(order);
+    return this.doShip(maker, order, input, ["ACCEPTED"]);
+  }
+
+  private async doShip(viewer: Account, order: Order, input: { carrier?: unknown; trackingCode?: unknown }, from: OrderStatus[]) {
     const carrier = typeof input.carrier === "string" ? input.carrier.trim().slice(0, 60) : "";
     const tracking = typeof input.trackingCode === "string" ? input.trackingCode.trim().slice(0, 80) : "";
     const fields: Record<string, string> = {};
     if (carrier.length < 2) fields.carrier = "shipping.carrier_required";
     if (tracking.length < 4) fields.trackingCode = "shipping.tracking_required";
     if (Object.keys(fields).length) throw Errors.validation(fields);
-    const row = await this.transition(order.id, ["ACCEPTED"], "SHIPPED", "MAKER", `${carrier} · ${tracking}`, {
+    const row = await this.transition(order.id, from, "SHIPPED", "MAKER", `${carrier} · ${tracking}`, {
       carrier,
       trackingCode: tracking,
       shippedAt: this.now(),
@@ -350,11 +367,12 @@ export class OrderService {
     const buyer = (await this.db.query.accounts.findFirst({ where: eq(accounts.id, order.buyerAccountId) }))!;
     const t = tx(buyer.locale);
     await this.mail(buyer, order, t.shipped(order.number), t.shippedBody(carrier, tracking, AUTO_RELEASE_DAYS));
-    return this.view(maker, order.id);
+    return this.view(viewer, order.id);
   }
 
   async cancel(buyer: Account, orderId: string) {
     const order = await this.ownOrder(buyer, orderId);
+    this.catalogOnly(order);
     if (order.status === "AWAITING_AUTHORIZATION") {
       if (!(await this.transition(order.id, ["AWAITING_AUTHORIZATION"], "CANCELLED", "BUYER", null))) this.stateError();
     } else if (order.status === "PAID") {
@@ -364,15 +382,17 @@ export class OrderService {
     return this.view(buyer, order.id);
   }
 
-  async confirmDelivery(buyer: Account, orderId: string) {
+  async confirmDelivery(buyer: Account, orderId: string, fromAtelier = false) {
     const order = await this.ownOrder(buyer, orderId);
+    if (!fromAtelier) this.catalogOnly(order);
     if (!(await this.transition(order.id, ["SHIPPED"], "DELIVERED", "BUYER", null, { deliveredAt: this.now() }))) this.stateError();
     await this.release(order.id, "BUYER");
     return this.view(buyer, order.id);
   }
 
-  async dispute(buyer: Account, orderId: string, note: unknown) {
+  async dispute(buyer: Account, orderId: string, note: unknown, fromAtelier = false) {
     const order = await this.ownOrder(buyer, orderId);
+    if (!fromAtelier) this.catalogOnly(order);
     const text = typeof note === "string" ? note.trim().slice(0, 1000) : "";
     if (text.length < 10) throw Errors.validation({ note: "dispute.note_required" });
     if (!(await this.transition(order.id, ["ACCEPTED", "SHIPPED"], "DISPUTED", "BUYER", text))) this.stateError();
@@ -453,6 +473,91 @@ export class OrderService {
     return due.length;
   }
 
+  // --- Tappe delle commissioni su misura (chiamate dall'Atelier) ------------------------------------
+
+  /** Crea l'ordine di una tappa (acconto o saldo) e avvia l'autorizzazione forte del pagamento. */
+  async createCommissionOrder(
+    buyer: Account,
+    maison: Maison,
+    input: { commissionId: string; stage: "DEPOSIT" | "BALANCE"; name: { it: string; en: string }; grossCents: number; address: ShippingAddress },
+    channel: Channel,
+    ctx: RequestContext,
+  ) {
+    const priced = priceOrder(
+      [{ productId: "", name: input.name, unit: "PIECE", qty: 1, priceCents: input.grossCents, b2bPriceCents: null, vatRateBps: 2200 }],
+      { professional: this.isProfessional(buyer), commissionBps: maison.commissionBps },
+    );
+    // Per i professionisti il prezzo pattuito resta il totale: netto e IVA si ricavano per scorporo.
+    const line = priced.lines[0]!;
+    if (priced.professional) {
+      const net = Math.round((input.grossCents * 10_000) / 12_200);
+      Object.assign(line, { unitNetCents: net, lineNetCents: net, lineVatCents: input.grossCents - net });
+      priced.subtotalCents = net;
+      priced.vatCents = input.grossCents - net;
+      priced.totalCents = input.grossCents;
+      priced.commissionCents = Math.round((input.grossCents * maison.commissionBps) / 10_000);
+      priced.payoutCents = input.grossCents - priced.commissionCents;
+    }
+    const order = await this.db.transaction(async (trx) => {
+      const [o] = await trx
+        .insert(orders)
+        .values({
+          number: this.newNumber(),
+          buyerAccountId: buyer.id,
+          maisonId: maison.id,
+          professional: priced.professional,
+          subtotalCents: priced.subtotalCents,
+          vatCents: priced.vatCents,
+          shippingCents: 0,
+          totalCents: priced.totalCents,
+          commissionBps: priced.commissionBps,
+          commissionCents: priced.commissionCents,
+          payoutCents: priced.payoutCents,
+          shippingAddress: input.address,
+          commissionId: input.commissionId,
+          stage: input.stage,
+        })
+        .returning();
+      await trx.insert(orderItems).values({ orderId: o!.id, ...line, productId: null });
+      await trx.insert(orderEvents).values({ orderId: o!.id, status: "AWAITING_AUTHORIZATION", actor: "BUYER" });
+      return o!;
+    });
+    const authorization = await this.newAuthorization(buyer, order, maison, channel, ctx);
+    return { order: await this.view(buyer, order.id), authorization };
+  }
+
+  async commissionOrder(orderId: string) {
+    const order = await this.db.query.orders.findFirst({ where: eq(orders.id, orderId) });
+    if (!order?.commissionId) throw Errors.notFound();
+    return order;
+  }
+
+  /** Inizio della lavorazione: l'acconto diventa della Maison (non più rimborsabile). */
+  async releaseCommissionDeposit(orderId: string) {
+    if (!(await this.transition(orderId, ["PAID"], "DELIVERED", "MAKER", "work_started", { deliveredAt: this.now() }))) this.stateError();
+    await this.release(orderId, "MAKER");
+  }
+
+  /** Spedizione dell'opera, a saldo pagato. */
+  async shipCommission(maker: Account, orderId: string, input: { carrier?: unknown; trackingCode?: unknown }) {
+    const order = await this.commissionOrder(orderId);
+    return this.doShip(maker, order, input, ["PAID", "ACCEPTED"]);
+  }
+
+  /** Ritiro del cliente prima della lavorazione: annulla la tappa o la rimborsa per intero. */
+  async cancelCommissionOrder(orderId: string) {
+    const order = await this.commissionOrder(orderId);
+    if (order.status === "AWAITING_AUTHORIZATION") {
+      if (!(await this.transition(order.id, ["AWAITING_AUTHORIZATION"], "CANCELLED", "BUYER", null))) this.stateError();
+      return false;
+    }
+    if (order.status === "PAID") {
+      await this.refundAndClose(order, "CANCELLED", "BUYER", null);
+      return true;
+    }
+    this.stateError();
+  }
+
   // --- Lettura ------------------------------------------------------------------------------------
 
   private async viewerOf(account: Account, order: Order): Promise<Viewer | null> {
@@ -476,13 +581,16 @@ export class OrderService {
     ]);
     const s = order.status;
     const actions: OrderView["actions"] = [];
-    if (viewer === "BUYER") {
+    if (order.commissionId) {
+      // Tappa di una commissione: le azioni sono nell'Atelier, qui resta solo l'autorizzazione.
+      if (viewer === "BUYER" && s === "AWAITING_AUTHORIZATION") actions.push("AUTHORIZE");
+    } else if (viewer === "BUYER") {
       if (s === "AWAITING_AUTHORIZATION") actions.push("AUTHORIZE", "CANCEL");
       if (s === "PAID") actions.push("CANCEL");
       if (s === "SHIPPED") actions.push("CONFIRM_DELIVERY");
       if (s === "ACCEPTED" || s === "SHIPPED") actions.push("DISPUTE");
     }
-    if (viewer === "MAKER") {
+    if (viewer === "MAKER" && !order.commissionId) {
       if (s === "PAID") actions.push("ACCEPT", "DECLINE");
       if (s === "ACCEPTED") actions.push("SHIP");
     }
@@ -535,12 +643,12 @@ export class OrderService {
       const maison = await this.db.query.maisons.findFirst({ where: eq(maisons.accountId, account.id) });
       rows = maison
         ? await this.db.query.orders.findMany({
-            where: and(eq(orders.maisonId, maison.id), sql`${orders.status} <> 'AWAITING_AUTHORIZATION'`),
+            where: and(eq(orders.maisonId, maison.id), sql`${orders.status} <> 'AWAITING_AUTHORIZATION'`, isNull(orders.commissionId)),
             orderBy: desc(orders.createdAt),
           })
         : [];
     } else {
-      rows = await this.db.query.orders.findMany({ where: eq(orders.buyerAccountId, account.id), orderBy: desc(orders.createdAt) });
+      rows = await this.db.query.orders.findMany({ where: and(eq(orders.buyerAccountId, account.id), isNull(orders.commissionId)), orderBy: desc(orders.createdAt) });
     }
     const disputes = account.isAdmin ? await this.db.query.orders.findMany({ where: eq(orders.status, "DISPUTED"), orderBy: desc(orders.updatedAt) }) : [];
     const maisonIds = [...new Set([...rows, ...disputes].map((o) => o.maisonId))];
@@ -557,7 +665,9 @@ export class OrderService {
   }
 
   private async mail(to: Account, order: Order, subject: string, body: string) {
-    const url = `${this.config.WEB_ORIGIN}/${to.locale}/area/ordini/${order.id}`;
+    const url = order.commissionId
+      ? `${this.config.WEB_ORIGIN}/${to.locale}/area/atelier/${order.commissionId}`
+      : `${this.config.WEB_ORIGIN}/${to.locale}/area/ordini/${order.id}`;
     await this.notifier.email({
       to: to.email,
       subject,

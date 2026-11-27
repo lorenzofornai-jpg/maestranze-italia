@@ -259,6 +259,8 @@ export const maisons = pgTable(
     coverImage: text("cover_image"),
     /** Commissione del portale in punti base (1000 = 10%). */
     commissionBps: integer("commission_bps").notNull().default(1000),
+    /** Accetta commissioni su misura nell'Atelier. */
+    acceptsCommissions: boolean("accepts_commissions").notNull().default(false),
     status: maisonStatus("status").notNull().default("DRAFT"),
     /** Calcolato dal servizio di ricerca su profilo, territorio e collezione. */
     searchVector: tsvector("search_vector"),
@@ -363,6 +365,9 @@ export const orders = pgTable(
     authChallengeId: uuid("auth_challenge_id"),
     paymentProvider: text("payment_provider"),
     paymentRef: text("payment_ref"),
+    /** Tappa di pagamento di una commissione su misura (acconto o saldo); null per gli ordini dal catalogo. */
+    commissionId: uuid("commission_id"),
+    stage: text("stage"), // DEPOSIT | BALANCE
     paidAt: ts("paid_at"),
     shippedAt: ts("shipped_at"),
     deliveredAt: ts("delivered_at"),
@@ -428,6 +433,115 @@ export const ledgerEntries = pgTable(
 );
 
 export type Order = typeof orders.$inferSelect;
+
+// =============================================================================================
+// L'Atelier: commissioni su misura
+// =============================================================================================
+
+export const commissionStatus = pgEnum("commission_status", [
+  "REQUESTED", // il cliente ha inviato il brief, la Maison deve rispondere entro 96 ore
+  "IN_DIALOGUE",
+  "PROPOSED", // c'è una proposta in attesa di risposta
+  "AGREED", // proposta accettata: acconto da pagare o pagato
+  "IN_WORK", // lavorazione iniziata: l'acconto è della Maison
+  "BALANCE_DUE", // il maestro ha chiesto il saldo; poi spedizione e consegna seguono l'ordine del saldo
+  "DECLINED",
+  "EXPIRED",
+  "WITHDRAWN",
+]);
+
+export const commissions = pgTable(
+  "commissions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    number: text("number").notNull(),
+    buyerAccountId: uuid("buyer_account_id")
+      .notNull()
+      .references(() => accounts.id),
+    maisonId: uuid("maison_id")
+      .notNull()
+      .references(() => maisons.id),
+    status: commissionStatus("status").notNull().default("REQUESTED"),
+    /** Lingua in cui il cliente conduce la conversazione. */
+    language: text("language").notNull(),
+    brief: jsonb("brief").$type<Record<string, unknown>>().notNull(),
+    /** Traduzioni della descrizione del brief, per lingua. */
+    briefTranslations: jsonb("brief_translations").$type<Record<string, string>>().notNull().default({}),
+    measurements: jsonb("measurements").$type<Record<string, unknown>>(),
+    measurementsConsentAt: ts("measurements_consent_at"),
+    respondBy: ts("respond_by").notNull(),
+    firstResponseAt: ts("first_response_at"),
+    deliveryAddress: jsonb("delivery_address").$type<ShippingAddress>(),
+    depositOrderId: uuid("deposit_order_id"),
+    balanceOrderId: uuid("balance_order_id"),
+    workStartedAt: ts("work_started_at"),
+    buyerReadAt: ts("buyer_read_at"),
+    makerReadAt: ts("maker_read_at"),
+    buyerNotifiedAt: ts("buyer_notified_at"),
+    makerNotifiedAt: ts("maker_notified_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [
+    uniqueIndex("commissions_number_uq").on(t.number),
+    index("commissions_buyer_idx").on(t.buyerAccountId, t.updatedAt),
+    index("commissions_maison_idx").on(t.maisonId, t.updatedAt),
+    index("commissions_status_idx").on(t.status, t.respondBy),
+  ],
+);
+
+export const commissionMessages = pgTable(
+  "commission_messages",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id, { onDelete: "cascade" }),
+    author: text("author").notNull(), // BUYER | MAKER | SYSTEM
+    authorAccountId: uuid("author_account_id"),
+    kind: text("kind").notNull(), // TEXT | IMAGE | EVENT
+    body: text("body"),
+    /** Lingua in cui è stato scritto. */
+    language: text("language"),
+    translations: jsonb("translations").$type<Record<string, string>>().notNull().default({}),
+    /** Chiave del file privato (foto), servito solo ai partecipanti. */
+    attachment: text("attachment"),
+    dictated: boolean("dictated").notNull().default(false),
+    /** Il testo conteneva recapiti esterni e l'autore ha confermato l'invio. */
+    contactFlag: boolean("contact_flag").notNull().default(false),
+    event: text("event"),
+    eventData: jsonb("event_data").$type<Record<string, string | number>>(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("commission_messages_idx").on(t.commissionId, t.createdAt)],
+);
+
+export const commissionProposals = pgTable(
+  "commission_proposals",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id, { onDelete: "cascade" }),
+    version: integer("version").notNull(),
+    status: text("status").notNull().default("SENT"), // SENT | ACCEPTED | SUPERSEDED | CHANGES_REQUESTED | WITHDRAWN
+    description: text("description").notNull(),
+    language: text("language").notNull(),
+    translations: jsonb("translations").$type<Record<string, string>>().notNull().default({}),
+    priceCents: integer("price_cents").notNull(),
+    depositPct: integer("deposit_pct").notNull(),
+    depositCents: integer("deposit_cents").notNull(),
+    leadTimeWeeks: integer("lead_time_weeks").notNull(),
+    fittings: integer("fittings").notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    respondedAt: ts("responded_at"),
+  },
+  (t) => [uniqueIndex("commission_proposals_version_uq").on(t.commissionId, t.version)],
+);
+
+export type Commission = typeof commissions.$inferSelect;
+export type CommissionMessage = typeof commissionMessages.$inferSelect;
+export type CommissionProposal = typeof commissionProposals.$inferSelect;
 export type OrderItem = typeof orderItems.$inferSelect;
 
 export type Account = typeof accounts.$inferSelect;

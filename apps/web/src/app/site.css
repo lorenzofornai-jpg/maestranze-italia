@@ -136,6 +136,22 @@
     padding: 9px 14px;
   }
 }
+/* iPhone: con lingua, «Esci» e «Area riservata» la testata non deve sbordare. */
+@media (max-width: 440px) {
+  .header-nav.right {
+    gap: 12px;
+    font-size: 10.5px;
+    letter-spacing: 0.14em;
+  }
+  .header-nav .signin {
+    padding: 8px 10px;
+  }
+  .site-header .wm-main {
+    font-size: 18px;
+    letter-spacing: 0.3em;
+    margin-right: -0.3em;
+  }
+}
 
 .lang {
   display: inline-flex;

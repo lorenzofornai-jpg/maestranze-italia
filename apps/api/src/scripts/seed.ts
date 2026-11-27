@@ -279,6 +279,8 @@ async function main() {
     }
     console.log(`Maison: ${m.name} (${email})`);
   }
+  // L'Atelier: la sartoria dimostrativa accetta commissioni su misura (anche su database già popolati).
+  await db.update(maisons).set({ acceptsCommissions: true }).where(eq(maisons.slug, "sartoria-partenopea"));
   await new SearchService(db).reindexAll();
   console.log(`\nAccount dimostrativi — password ${PASSWORD}\n  staff@maestranze.it (staff)\n  chef@osteria.it (ristorante)`);
   await pool.end();

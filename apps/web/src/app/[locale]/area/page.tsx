@@ -95,6 +95,10 @@ export default function AreaPage() {
               <span className="name">{t("area.orders.cta")}</span>
               <span className="desc">{t(`area.orders.cta.body.${user.role}`)}</span>
             </Link>
+            <Link href={`/${locale}/area/atelier`} className="area-card">
+              <span className="name">{t("area.atelier.cta")}</span>
+              <span className="desc">{t(`area.atelier.cta.body.${user.role}`)}</span>
+            </Link>
             {user.isAdmin && (
               <Link href={`/${locale}/area/selezione`} className="area-card">
                 <span className="name">{t("area.selection.cta")}</span>

@@ -1,4 +1,5 @@
 import { catalogEn, catalogIt, type CatalogKey } from "./i18n-catalog";
+import { atelierEn, atelierIt, type AtelierKey } from "./i18n-atelier";
 
 /**
  * Testi dell'interfaccia in italiano e in inglese. La chiave è la stessa nelle due lingue:
@@ -244,7 +245,7 @@ const it = {
   "maker.company_required": "Per l'offerta serve una partita IVA.",
 } as const;
 
-export type MessageKey = keyof typeof it | CatalogKey;
+export type MessageKey = keyof typeof it | CatalogKey | AtelierKey;
 
 const en: Record<keyof typeof it, string> = {
   "nav.maisons": "The Maisons",
@@ -479,7 +480,7 @@ const en: Record<keyof typeof it, string> = {
   "maker.company_required": "Supply profiles require a VAT number.",
 };
 
-export const dictionaries = { it: { ...it, ...catalogIt }, en: { ...en, ...catalogEn } } as const;
+export const dictionaries = { it: { ...it, ...catalogIt, ...atelierIt }, en: { ...en, ...catalogEn, ...atelierEn } } as const;
 export type Locale = keyof typeof dictionaries;
 export const isLocale = (v: string): v is Locale => v === "it" || v === "en";
 

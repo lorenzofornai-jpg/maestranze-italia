@@ -109,6 +109,21 @@ export default async function MaisonPage({ params }: { params: Params }) {
           </section>
         )}
 
+        {m.acceptsCommissions && (
+          <section className="maison-bespoke">
+            <div className="wrap">
+              <Reveal className="maison-bespoke-inner">
+                <span className="eyebrow">{t("bespoke.eyebrow")}</span>
+                <h2 className="display h2">{t("bespoke.title")}</h2>
+                <p className="lead">{t("bespoke.body")}</p>
+                <Link href={`/${locale}/maison/${m.slug}/su-misura`} className="btn">
+                  {t("bespoke.cta")} <span className="arrow" />
+                </Link>
+              </Reveal>
+            </div>
+          </section>
+        )}
+
         {/* La collezione */}
         <section className="maison-collection">
           <div className="wrap">

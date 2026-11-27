@@ -8,6 +8,7 @@ import { security, type Config } from "../src/config";
 import { createDb } from "../src/db/client";
 import { MemoryNotifier } from "../src/lib/notifications";
 import { SandboxPaymentProvider } from "../src/orders/payments";
+import { FakeTranslator } from "../src/lib/translate";
 
 const TEST_DB = process.env.TEST_DATABASE_URL ?? "postgres://maestranze:maestranze@localhost:5432/maestranze_test";
 
@@ -25,18 +26,20 @@ export async function setupApp() {
     SMS_PROVIDER: "memory",
     MEDIA_DIR: join(tmpdir(), "maestranze-test-media"),
     AI_SEARCH: "off",
+    AI_TRANSLATION: "off",
     PUSH_PROVIDER: "memory",
     security,
   };
   const { db, pool } = createDb(TEST_DB);
   await pool.query(
-    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries cascade",
+    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries, commissions, commission_messages, commission_proposals cascade",
   );
   const notifier = new MemoryNotifier();
   const clock = { offsetMs: 0 };
   const payments = new SandboxPaymentProvider();
-  const app = await buildApp({ db, config, notifier, payments, now: () => new Date(Date.now() + clock.offsetMs) });
-  return { app, notifier, clock, pool, payments, close: async () => (await app.close(), await pool.end()) };
+  const translator = new FakeTranslator();
+  const app = await buildApp({ db, config, notifier, payments, translator, now: () => new Date(Date.now() + clock.offsetMs) });
+  return { app, notifier, clock, pool, payments, translator, close: async () => (await app.close(), await pool.end()) };
 }
 
 export type TestApp = Awaited<ReturnType<typeof setupApp>>;

@@ -20,6 +20,8 @@ const envSchema = z.object({
   EXPO_ACCESS_TOKEN: z.string().optional(),
   /** Ricerca in linguaggio naturale con l'LLM: auto = attiva se c'è ANTHROPIC_API_KEY. */
   AI_SEARCH: z.enum(["auto", "on", "off"]).default("auto"),
+  /** Traduzione automatica dell'Atelier con l'LLM: auto = attiva se c'è ANTHROPIC_API_KEY. */
+  AI_TRANSLATION: z.enum(["auto", "on", "off"]).default("auto"),
   MEDIA_DIR: z.string().default("./uploads"),
   PUSH_PROVIDER: z.enum(["console", "memory", "expo"]).default("console"),
 });

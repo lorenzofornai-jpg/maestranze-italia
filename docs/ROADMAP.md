@@ -8,6 +8,7 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 - ✅ Esplorazione per territorio e disciplina, ricerca full-text, frasi in linguaggio naturale
 - ✅ Ordini, autorizzazione forte del pagamento, custodia, accredito con commissione, rimborsi, controversie (fornitore *sandbox*)
 - ✅ SMS Twilio, push Expo, build EAS
+- ✅ **Atelier, primo passo (sartoria)**: brief guidato con misure, conversazione tradotta con dettatura e foto private, proposta con versioni, acconto e saldo in custodia, risposta entro 96 ore, avviso sui contatti esterni
 
 ## 1. Verifiche da completare
 - 🔜 **App su telefono vero**: impronta e volto, notifiche push, QR code (guida in `TEST-SU-TELEFONO.md`)
@@ -40,29 +41,54 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 ## 5. Relazione cliente–Maison
 - ◻️ Messaggistica per ordine e per Maison, con notifiche
 - ◻️ Richieste di preventivo (RFQ) e forniture ricorrenti per ristoranti e hotel
-- 🔜 Commissioni su misura (sartoria, ceramica, selleria, cantina): vedi **5b. L'Atelier**
+- ✅ Commissioni su misura per la sartoria, altre arti in arrivo: vedi **5b. L'Atelier**
 - ◻️ Recensioni verificate (solo dopo ordine concluso)
 
-## 5b. L'Atelier — su misura e su commissione (in progettazione)
+## 5b. L'Atelier — su misura e su commissione
 Uno spazio privato per ogni commissione, dentro il portale e l'app, dove cliente e Maison si conoscono prima
 dell'acquisto e dove l'acquisto si conclude.
-- ◻️ **Brief guidato per arte**: sartoria (capo, occasione, tessuto, misure, data), ceramica (servizio, quantità,
-  decoro, logo per hotel), cantina (etichetta personalizzata, evento), selleria. Foto e riferimenti allegati
-- ◻️ **Conversazione tradotta**: ognuno scrive e legge nella propria lingua, con l'originale sempre consultabile;
-  glossario dei termini di mestiere per arte (es. «spalla napoletana»); messaggi vocali trascritti e tradotti
-- ◻️ **Proposta della Maison**: bozzetto, prezzo, tempi, tappe (acconto · prova · saldo), versioni successive;
-  accettazione con autorizzazione forte, pagamenti a tappe in custodia
+
+**Decisioni prese (novembre 2026)**: si parte dalla **sartoria**; il cliente può essere **ovunque nel mondo**
+(consegna internazionale, conversazione in 18 lingue); la Maison **risponde entro 96 ore**, altrimenti la
+richiesta si chiude e si avvisano entrambi; l'**acconto** (20–70%, lo sceglie il maestro) è in custodia e
+rimborsabile finché il maestro non **inizia la lavorazione**, poi passa alla Maison e non è più rimborsabile;
+il saldo resta in custodia fino alla consegna (rilascio automatico dopo 14 giorni, come gli ordini).
+Sì anche all'assistente di bottega **con la voce** (passo 3).
+
+**Passo 1 — fatto**
+- ✅ Richiesta in tre passi dalla pagina della Maison: capo, occasione, tessuto, colore, descrizione, budget, data,
+  paese di consegna, lingua; misure guidate (10 misure con istruzioni, vestibilità) con consenso esplicito
+- ✅ Conversazione tradotta con l'LLM, glossario di sartoria (i termini d'arte restano in italiano), originale
+  sempre consultabile; dettatura vocale del browser; foto private servite solo ai due partecipanti
+- ✅ Proposta del maestro (prezzo, acconto, settimane, prove), richiesta di modifiche, nuove versioni
+- ✅ Accettazione con indirizzo internazionale e autorizzazione forte; acconto e saldo sono ordini in custodia,
+  con le stesse regole di commissione, rimborso e controversia degli ordini dal catalogo
+- ✅ Inizio lavorazione, annotazione delle prove, richiesta del saldo, spedizione con tracciamento, conferma
+- ✅ Avviso gentile su email, telefoni, IBAN, link e app di messaggistica (si può inviare comunque; resta traccia)
+- ✅ Email a ogni passaggio (messaggi raggruppati ogni 15 minuti), elenco con messaggi da leggere e scadenze
+
+**Passo 1 — da completare**
+- ◻️ **Messaggi vocali veri** (audio conservato, trascritto e tradotto): serve un servizio di trascrizione
+  (es. Whisper, Deepgram); oggi c'è la dettatura del browser, che scrive il testo senza salvare l'audio
+- ◻️ **IVA per l'estero**: oggi tutto al 22%; per consegne fuori UE serve la cessione all'esportazione (non imponibile)
+  e per i privati UE l'IVA del paese di destinazione (OSS) — da decidere con il commercialista
+- ◻️ Notifiche push sull'app per i nuovi messaggi; pannello staff con le conversazioni segnalate per i contatti
+- ◻️ Altre arti: ceramica (servizio, quantità, decoro, logo per hotel), selleria, cantina (etichetta personalizzata)
+- ◻️ Clausola di non aggiramento nel contratto Maison (da verificare con un legale, regolamento UE 2019/1150);
+  commissione decrescente per i clienti abituali
+
+**Passo 2**
 - ◻️ **Videochiamate nel portale**: su appuntamento (agenda della Maison, fusi orari), sottotitoli tradotti in
   diretta, registrazione solo con consenso; interprete umano su richiesta per commissioni di valore
 - ◻️ **Il Concierge** (assistente LLM del portale): aiuta il cliente a scrivere il brief, suggerisce le Maison adatte,
   riassume la conversazione; dichiara sempre di essere un assistente automatico
-- ◻️ **Assistenti di bottega** (LLM per singola Maison, su contenuti approvati dalla Maison): guida alla presa delle
-  misure, abbinamenti del sommelier, scelta dei materiali. Non promettono prezzi né tempi: la proposta è del maestro
-- ◻️ **Restare nel portale**: valore che fuori non c'è (traduzione, archivio, custodia dei pagamenti, garanzia,
-  controversie); avviso gentile quando un messaggio contiene telefono, email o IBAN; clausola di non aggiramento
-  nel contratto Maison (da verificare con un legale, anche rispetto al regolamento UE 2019/1150); commissione
-  decrescente per i clienti abituali
-- ◻️ **Privacy**: misure e foto del corpo con consenso esplicito, visibili solo alla Maison, conservazione limitata
+
+**Passo 3**
+- ◻️ **Assistenti di bottega** (LLM per singola Maison, su contenuti approvati dalla Maison), **anche con la voce**:
+  guida alla presa delle misure, abbinamenti del sommelier, scelta dei materiali. Non promettono prezzi né tempi:
+  la proposta è del maestro
+- ◻️ *Trunk show*: il maestro in trasferta (Milano, Londra, New York), prove prenotabili dal portale
+- ◻️ **Privacy**: conservazione limitata di misure e foto dopo la consegna, esportazione e cancellazione su richiesta
 
 ## 6. Esperienza ed editoriale
 - ◻️ Collezioni curate a tema (es. «La tavola dell'Appennino»), pagina per regione

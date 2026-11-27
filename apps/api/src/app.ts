@@ -6,7 +6,10 @@ import rateLimit from "@fastify/rate-limit";
 import fastifyStatic from "@fastify/static";
 import { resolve } from "node:path";
 import { CatalogService } from "./catalog/service";
-import { DiskMediaStore, MAX_IMAGE_BYTES, type MediaStore } from "./lib/media";
+import { AtelierService } from "./atelier/service";
+import { DiskMediaStore, MAX_IMAGE_BYTES, PrivateFiles, type MediaStore } from "./lib/media";
+import { LlmTranslator, NoTranslator, type Translator } from "./lib/translate";
+import { atelierRoutes } from "./routes/atelier";
 import { catalogRoutes } from "./routes/catalog";
 import { orderRoutes } from "./routes/orders";
 import { SandboxPaymentProvider, type PaymentProvider } from "./orders/payments";
@@ -26,6 +29,7 @@ export const SESSION_COOKIE = "mi_session";
 declare module "fastify" {
   interface FastifyInstance {
     orders: OrderService;
+    atelier: AtelierService;
   }
   interface FastifyRequest {
     auth?: { account: Account; session: { id: string; accountId: string; channel: Channel; createdAt: Date; deviceId: string | null } };
@@ -41,6 +45,7 @@ export async function buildApp(opts: {
   media?: MediaStore;
   interpreter?: Interpreter;
   payments?: PaymentProvider;
+  translator?: Translator;
 }) {
   const { config } = opts;
   const app = Fastify({ logger: opts.logger ?? process.env.DEBUG_API === "1", trustProxy: true, bodyLimit: 64 * 1024 });
@@ -145,6 +150,13 @@ export async function buildApp(opts: {
   const orderService = new OrderService(opts.db, config, opts.notifier, auth, opts.payments ?? new SandboxPaymentProvider(), opts.now);
   orderRoutes(app, orderService, { requireSession, ctx, channelOf, strict });
   app.decorate("orders", orderService);
+
+  // L'Atelier: commissioni su misura con conversazione tradotta
+  const useTranslation = config.AI_TRANSLATION === "on" || (config.AI_TRANSLATION === "auto" && !!process.env.ANTHROPIC_API_KEY);
+  const translator = opts.translator ?? (useTranslation ? new LlmTranslator((m) => app.log.warn(m)) : new NoTranslator());
+  const atelier = new AtelierService(opts.db, config, opts.notifier, orderService, translator, new PrivateFiles(`${mediaDir}-private`), opts.now);
+  atelierRoutes(app, atelier, { requireSession, ctx, channelOf, strict });
+  app.decorate("atelier", atelier);
 
   // --- Esplorazione e ricerca -------------------------------------------------------------------
   app.get("/v1/maisons", async (req) => search.search(req.query));

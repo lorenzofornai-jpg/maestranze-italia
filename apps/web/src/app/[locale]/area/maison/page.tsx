@@ -76,6 +76,7 @@ export default function MaisonEditor() {
     certifications: [] as string[],
     minOrder: "",
     leadTime: "",
+    acceptsCommissions: false,
   });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [msg, setMsg] = useState<{ kind: "ok" | "error"; text: string } | null>(null);
@@ -101,6 +102,7 @@ export default function MaisonEditor() {
           certifications: m.certifications,
           minOrder: fromCents(m.b2bMinOrderCents),
           leadTime: m.leadTimeDays ? String(m.leadTimeDays) : "",
+          acceptsCommissions: m.acceptsCommissions,
         });
       }
       setLoaded(true);
@@ -134,6 +136,7 @@ export default function MaisonEditor() {
           certifications: form.certifications,
           b2bMinOrderCents: toCents(form.minOrder),
           leadTimeDays: form.leadTime ? Number(form.leadTime) : null,
+          acceptsCommissions: form.acceptsCommissions,
         },
       });
       setMsg({ kind: "ok", text: t("editor.saved") });
@@ -282,6 +285,16 @@ export default function MaisonEditor() {
                 })}
               </div>
             </div>
+            {form.discipline === "TAILORING" && (
+              <label className="check">
+                <input type="checkbox" checked={form.acceptsCommissions} onChange={(e) => setForm({ ...form, acceptsCommissions: e.target.checked })} />
+                <span>
+                  {t("editor.accepts_commissions")}
+                  <br />
+                  <span className="small">{t("editor.accepts_commissions.hint")}</span>
+                </span>
+              </label>
+            )}
             <div>
               <button className="btn" disabled={busy}>
                 {t("editor.save")} <span className="arrow" />

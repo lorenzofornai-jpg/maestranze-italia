@@ -76,6 +76,8 @@ export const maisonSchema = z.object({
   certifications: z.array(z.enum(CERTIFICATIONS)).max(10).default([]),
   b2bMinOrderCents: z.coerce.number().int().min(0).max(100_000_00).optional().nullable(),
   leadTimeDays: z.coerce.number().int().min(0).max(365).optional().nullable(),
+  /** Accetta commissioni su misura nell'Atelier (per ora solo sartoria). */
+  acceptsCommissions: z.boolean().optional(),
 });
 export type MaisonInput = z.input<typeof maisonSchema>;
 
@@ -133,6 +135,8 @@ export interface PublicMaison {
   b2bMinOrderCents: number | null;
   leadTimeDays: number | null;
   coverImage: string | null;
+  /** Si può richiedere una commissione su misura (Atelier). */
+  acceptsCommissions: boolean;
   productCount?: number;
   products?: PublicProduct[];
 }

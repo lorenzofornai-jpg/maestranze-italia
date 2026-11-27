@@ -43,3 +43,8 @@ await app.listen({ port: config.PORT, host: "0.0.0.0" });
 setInterval(() => {
   app.orders.autoRelease().catch((err) => app.log.error(err));
 }, 60 * 60 * 1000).unref();
+
+// Atelier: chiude le richieste rimaste senza risposta oltre le 96 ore (controllo ogni 10 minuti).
+setInterval(() => {
+  app.atelier.expireOverdue().catch((err) => app.log.error(err));
+}, 10 * 60 * 1000).unref();

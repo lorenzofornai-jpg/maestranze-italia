@@ -80,6 +80,7 @@ export function toPublicMaison(m: Maison): PublicMaison {
     b2bMinOrderCents: m.b2bMinOrderCents,
     leadTimeDays: m.leadTimeDays,
     coverImage: m.coverImage,
+    acceptsCommissions: m.acceptsCommissions && m.discipline === "TAILORING",
   };
 }
 
@@ -151,6 +152,7 @@ export class CatalogService {
       certifications: data.certifications,
       b2bMinOrderCents: data.b2bMinOrderCents ?? null,
       leadTimeDays: data.leadTimeDays ?? null,
+      acceptsCommissions: data.discipline === "TAILORING" && (data.acceptsCommissions ?? existing?.acceptsCommissions ?? false),
       updatedAt: this.now(),
     };
     if (existing) {
