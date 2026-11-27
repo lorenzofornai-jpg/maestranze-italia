@@ -43,6 +43,7 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
   const subtitlesRef = useRef(subtitles);
   subtitlesRef.current = subtitles;
   const captionSeq = useRef(0);
+  const lastSent = useRef({ text: "", at: 0 });
 
   const base = `/calls/${call.id}`;
 
@@ -82,7 +83,8 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
     if (recognizer.current || closed.current) return;
     const r = new R();
     r.lang = speechLocale(call.myLanguage);
-    r.continuous = true;
+    // Una frase alla volta: su iPhone la modalità continua ripete o spezza le frasi; si riavvia a ogni fine.
+    r.continuous = false;
     r.interimResults = true;
     r.onresult = (e: any) => {
       let interim = "";
@@ -91,6 +93,9 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
         if (!text) continue;
         if (e.results[i].isFinal) {
           setMine(text);
+          // Stessa frase consegnata due volte dal riconoscimento: si manda una volta sola.
+          if (text === lastSent.current.text && Date.now() - lastSent.current.at < 4000) continue;
+          lastSent.current = { text, at: Date.now() };
           api<{ text: string; translation: string | null }>(`${base}/captions`, { body: { text } })
             .then((res) => {
               const msg = JSON.stringify({ text: res.translation ?? text, original: res.translation && res.translation !== text ? text : null, untranslated: !res.translation });
@@ -107,7 +112,7 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
     // Il riconoscimento si ferma dopo un silenzio: lo si riavvia finché la chiamata è aperta.
     r.onend = () => {
       recognizer.current = null;
-      if (!closed.current && subtitlesRef.current && phaseRef.current === "live") setTimeout(startRecognition, 300);
+      if (!closed.current && subtitlesRef.current && phaseRef.current === "live") setTimeout(startRecognition, 150);
     };
     recognizer.current = r;
     try {

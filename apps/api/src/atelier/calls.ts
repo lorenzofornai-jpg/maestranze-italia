@@ -50,6 +50,9 @@ const validTimeZone = (tz: string | undefined) => {
  * I sottotitoli: ciascun browser trascrive chi parla, il portale traduce nella lingua dell'altro.
  */
 export class CallService {
+  /** Ultime battute di ogni chiamata, per tradurre i sottotitoli con il contesto (solo in memoria). */
+  private transcripts = new Map<string, { speaker: string; text: string; at: number }[]>();
+
   constructor(
     private db: Db,
     private config: Config,
@@ -90,6 +93,7 @@ export class CallService {
       .where(and(eq(commissionCalls.id, call.id), inArray(commissionCalls.status, ["RINGING", "ACTIVE"])))
       .returning();
     if (!row) return null;
+    this.transcripts.delete(row.id);
     if (to === "MISSED" || to === "DECLINED") await this.atelier.event(row.commissionId, "CALL_MISSED");
     else if (row.answeredAt) {
       const minutes = Math.max(1, Math.round((this.now().getTime() - row.answeredAt.getTime()) / 60_000));
@@ -216,8 +220,16 @@ export class CallService {
     const { c, maison, maker } = await this.atelier.load(account, call.commissionId);
     const from = this.atelier.langOf(party, c, maker);
     const to = this.atelier.langOf(party === "BUYER" ? "MAKER" : "BUYER", c, maker);
+    // Le battute restano in memoria solo durante la chiamata, come contesto: non si salvano.
+    const now = this.now().getTime();
+    const lines = (this.transcripts.get(callId) ?? []).filter((l) => now - l.at < 5 * 60_000).slice(-6);
+    const speaker = party === "BUYER" ? "Client" : "Artisan";
+    this.transcripts.set(callId, [...lines, { speaker, text: line, at: now }]);
+    if (this.transcripts.size > 500) this.transcripts.delete(this.transcripts.keys().next().value!);
     if (from === to) return { text: line, translation: line, language: to };
-    const translation = this.translator.enabled ? await this.translator.translate(line, to, { discipline: maison.discipline }) : null;
+    const translation = this.translator.enabled
+      ? await this.translator.translate(line, to, { discipline: maison.discipline, mode: "caption", from, previous: lines.map(({ speaker, text }) => ({ speaker, text })) })
+      : null;
     return { text: line, translation, language: to };
   }
 
