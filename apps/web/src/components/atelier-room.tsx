@@ -47,7 +47,11 @@ function Translated({ text, original, lang, small }: { text: string; original: s
 function eventText(t: T, m: CommissionMessageView, locale: string) {
   const d = m.eventData ?? {};
   const total = typeof d.totalCents === "number" ? formatEuro(d.totalCents, locale) : "";
-  return t(`ev.${m.event}`, { ...d, total });
+  const when =
+    typeof d.startsAt === "string"
+      ? new Date(d.startsAt).toLocaleString(locale === "it" ? "it-IT" : "en-GB", { weekday: "short", day: "numeric", month: "short", hour: "2-digit", minute: "2-digit" })
+      : "";
+  return t(`ev.${m.event}`, { ...d, total, when });
 }
 
 function Message({ m, c, locale }: { m: CommissionMessageView; c: CommissionView; locale: string }) {
@@ -176,7 +180,7 @@ function Composer({ c, onChange }: { c: CommissionView; onChange: (c: Commission
   );
 }
 
-export function Conversation({ c, onChange }: { c: CommissionView; onChange: (c: CommissionView) => void }) {
+export function Conversation({ c, onChange, onCall }: { c: CommissionView; onChange: (c: CommissionView) => void; onCall: () => void }) {
   const t = useT();
   const locale = useLocale();
   const end = useRef<HTMLDivElement>(null);
@@ -192,7 +196,18 @@ export function Conversation({ c, onChange }: { c: CommissionView; onChange: (c:
   return (
     <section className="conversation">
       <div className="conversation-head">
-        <span className="eyebrow">{t("at.conversation")}</span>
+        <div className="conversation-title">
+          <span className="eyebrow">{t("at.conversation")}</span>
+          {c.actions.includes("CALL") && (
+            <button type="button" className="tool call-start" onClick={onCall} title={t("call.start.hint")}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <rect x="3" y="7" width="13" height="10" rx="1" />
+                <path d="M16 11l5-3v8l-5-3" />
+              </svg>
+              {t("call.start")}
+            </button>
+          )}
+        </div>
         <p className="small" style={{ margin: 0 }}>
           {theirs === c.viewerLanguage
             ? t("at.languages.same", { lang: languageName(theirs) })
@@ -619,5 +634,117 @@ export function Steps({ phase }: { phase: string }) {
     </ol>
     {steps[at] && <p className="at-steps-current">{`${at + 1} / ${steps.length} · ${t(`at.steps.${steps[at]}`)}`}</p>}
     </>
+  );
+}
+
+// --- Appuntamenti per la videochiamata ---------------------------------------------------------------
+
+const localZone = () => Intl.DateTimeFormat().resolvedOptions().timeZone;
+
+function fmt(iso: string, locale: string, timeZone?: string | null) {
+  const opts: Intl.DateTimeFormatOptions = { weekday: "long", day: "numeric", month: "long", hour: "2-digit", minute: "2-digit", timeZoneName: "short" };
+  try {
+    return new Date(iso).toLocaleString(locale === "it" ? "it-IT" : "en-GB", timeZone ? { ...opts, timeZone } : opts);
+  } catch {
+    return new Date(iso).toLocaleString(locale === "it" ? "it-IT" : "en-GB", opts);
+  }
+}
+
+export function AppointmentsPanel({ c, onChange, onCall }: { c: CommissionView; onChange: (c: CommissionView) => void; onCall: () => void }) {
+  const t = useT();
+  const locale = useLocale();
+  const [open, setOpen] = useState(false);
+  const [when, setWhen] = useState("");
+  const [duration, setDuration] = useState("30");
+  const [errors, setErrors] = useState<Record<string, string>>({});
+  const [error, setError] = useState<string | null>(null);
+  const visible = c.appointments.filter((a) => a.status === "PROPOSED" || (a.status === "ACCEPTED" && new Date(a.startsAt).getTime() + a.durationMin * 60_000 > Date.now()));
+  if (!c.actions.includes("SCHEDULE") && visible.length === 0) return null;
+
+  const propose = async () => {
+    setErrors({});
+    setError(null);
+    try {
+      const startsAt = when ? new Date(when).toISOString() : "";
+      onChange(await api<CommissionView>(`/commissions/${c.id}/appointments`, { body: { startsAt, durationMin: Number(duration), timeZone: localZone() } }));
+      setOpen(false);
+      setWhen("");
+    } catch (err) {
+      if (err instanceof ApiFailure && err.code === "VALIDATION_FAILED") setErrors(err.fields);
+      else setError(errorMessage(t, err));
+    }
+  };
+  const respond = async (id: string, accept: boolean) => {
+    setError(null);
+    try {
+      onChange(await api<CommissionView>(`/appointments/${id}/respond`, { body: { accept, timeZone: localZone() } }));
+      if (!accept) setOpen(true);
+    } catch (err) {
+      setError(errorMessage(t, err));
+    }
+  };
+
+  return (
+    <div className="side-panel">
+      <span className="eyebrow plain">{t("appt.title")}</span>
+      {visible.map((a) => {
+        const soon = a.status === "ACCEPTED" && Math.abs(new Date(a.startsAt).getTime() - Date.now()) < 15 * 60_000;
+        return (
+          <div key={a.id} className="appointment">
+            <div className="proposal-head">
+              <span className={`badge ${a.status === "ACCEPTED" ? "on" : "warn"}`}>{t(`appt.status.${a.status}`)}</span>
+              <span className="small">{t("appt.minutes", { n: a.durationMin })}</span>
+            </div>
+            <p className="appointment-when">{fmt(a.startsAt, locale)}</p>
+            {a.otherTimeZone && a.otherTimeZone !== localZone() && <p className="small" style={{ margin: 0 }}>{t("appt.their_time", { time: fmt(a.startsAt, locale, a.otherTimeZone) })}</p>}
+            {a.status === "PROPOSED" && !a.mine && (
+              <div className="side-form-actions">
+                <button type="button" className="btn" onClick={() => respond(a.id, true)}>
+                  {t("appt.accept")}
+                </button>
+                <button type="button" className="link" onClick={() => respond(a.id, false)}>
+                  {t("appt.decline")}
+                </button>
+              </div>
+            )}
+            {soon && (
+              <button type="button" className="btn block" onClick={onCall}>
+                {t("appt.join")} <span className="arrow" />
+              </button>
+            )}
+          </div>
+        );
+      })}
+      {c.actions.includes("SCHEDULE") && !open && (
+        <button type="button" className="link" style={{ alignSelf: "flex-start" }} onClick={() => setOpen(true)}>
+          {t("appt.propose")}
+        </button>
+      )}
+      {open && (
+        <div className="side-form rise">
+          <Field label={t("appt.when")} error={errors.startsAt} hint={t("appt.when.hint", { tz: localZone() })}>
+            <input type="datetime-local" value={when} onChange={(e) => setWhen(e.target.value)} />
+          </Field>
+          <Field label={t("appt.duration")}>
+            <select value={duration} onChange={(e) => setDuration(e.target.value)}>
+              {[20, 30, 45, 60].map((n) => (
+                <option key={n} value={n}>
+                  {t("appt.minutes", { n })}
+                </option>
+              ))}
+            </select>
+          </Field>
+          <div className="side-form-actions">
+            <button type="button" className="btn" onClick={propose}>
+              {t("appt.send")}
+            </button>
+            <button type="button" className="link" onClick={() => setOpen(false)}>
+              {t("act.cancel")}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p className="notice error">{error}</p>}
+    </div>
   );
 }

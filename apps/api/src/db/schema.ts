@@ -2,6 +2,7 @@ import { sql } from "drizzle-orm";
 import {
   boolean,
   customType,
+  serial,
   index,
   integer,
   jsonb,
@@ -539,6 +540,63 @@ export const commissionProposals = pgTable(
   (t) => [uniqueIndex("commission_proposals_version_uq").on(t.commissionId, t.version)],
 );
 
+/** Videochiamate dell'Atelier: il portale mette in contatto i due browser (WebRTC), senza registrare. */
+export const commissionCalls = pgTable(
+  "commission_calls",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id, { onDelete: "cascade" }),
+    startedBy: text("started_by").notNull(), // BUYER | MAKER
+    status: text("status").notNull().default("RINGING"), // RINGING | ACTIVE | ENDED | MISSED | DECLINED
+    answeredAt: ts("answered_at"),
+    endedAt: ts("ended_at"),
+    /** Ultimo segnale di vita di ciascuna parte (per chiudere le chiamate abbandonate). */
+    buyerSeenAt: ts("buyer_seen_at"),
+    makerSeenAt: ts("maker_seen_at"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("commission_calls_idx").on(t.commissionId, t.createdAt)],
+);
+
+/** Messaggi di segnalazione WebRTC (offerta, risposta, candidati ICE) scambiati tramite il portale. */
+export const callSignals = pgTable(
+  "call_signals",
+  {
+    id: serial("id").primaryKey(),
+    callId: uuid("call_id")
+      .notNull()
+      .references(() => commissionCalls.id, { onDelete: "cascade" }),
+    sender: text("sender").notNull(), // BUYER | MAKER
+    kind: text("kind").notNull(), // offer | answer | ice
+    payload: jsonb("payload").$type<Record<string, unknown>>().notNull(),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("call_signals_idx").on(t.callId, t.id)],
+);
+
+/** Appuntamenti per la videochiamata, con il fuso orario di ciascuna parte. */
+export const commissionAppointments = pgTable(
+  "commission_appointments",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    commissionId: uuid("commission_id")
+      .notNull()
+      .references(() => commissions.id, { onDelete: "cascade" }),
+    proposedBy: text("proposed_by").notNull(), // BUYER | MAKER
+    startsAt: ts("starts_at").notNull(),
+    durationMin: integer("duration_min").notNull().default(30),
+    status: text("status").notNull().default("PROPOSED"), // PROPOSED | ACCEPTED | DECLINED | CANCELLED
+    buyerTimeZone: text("buyer_time_zone"),
+    makerTimeZone: text("maker_time_zone"),
+    createdAt: ts("created_at").notNull().defaultNow(),
+  },
+  (t) => [index("commission_appointments_idx").on(t.commissionId, t.startsAt)],
+);
+
+export type CommissionCall = typeof commissionCalls.$inferSelect;
+export type CommissionAppointment = typeof commissionAppointments.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;
 export type CommissionMessage = typeof commissionMessages.$inferSelect;
 export type CommissionProposal = typeof commissionProposals.$inferSelect;

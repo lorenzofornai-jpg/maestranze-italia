@@ -258,7 +258,9 @@ export type CommissionAction =
   | "PAY_BALANCE"
   | "SHIP"
   | "CONFIRM_DELIVERY"
-  | "DISPUTE";
+  | "DISPUTE"
+  | "CALL"
+  | "SCHEDULE";
 
 export type CommissionEvent =
   | "REQUESTED"
@@ -276,7 +278,12 @@ export type CommissionEvent =
   | "BALANCE_PAID"
   | "SHIPPED"
   | "DELIVERED"
-  | "DISPUTED";
+  | "DISPUTED"
+  | "CALL_ENDED"
+  | "CALL_MISSED"
+  | "APPOINTMENT_PROPOSED"
+  | "APPOINTMENT_ACCEPTED"
+  | "APPOINTMENT_DECLINED";
 
 export interface CommissionMessageView {
   id: string;
@@ -335,6 +342,7 @@ export interface CommissionView {
   deliveryAddress: (DeliveryAddressInput & { country: string }) | null;
   deposit: { orderId: string; status: OrderStatus; totalCents: number } | null;
   balance: { orderId: string; status: OrderStatus; totalCents: number; carrier: string | null; trackingCode: string | null; autoReleaseAt: string | null } | null;
+  appointments: AppointmentView[];
   /** Solo per la Maison: commissione del portale e accredito su ogni tappa. */
   payout?: { commissionBps: number };
   workStartedAt: string | null;
@@ -353,4 +361,57 @@ export interface CommissionSummary {
   answered: boolean;
   unread: number;
   updatedAt: string;
+}
+
+// --- Videochiamate e appuntamenti ----------------------------------------------------------------
+
+/** Secondi di squillo senza risposta prima che la chiamata risulti persa. */
+export const CALL_RING_SECONDS = 60;
+/** Secondi senza segnali di vita dopo i quali una chiamata attiva si considera chiusa. */
+export const CALL_IDLE_SECONDS = 45;
+
+export type CallStatus = "RINGING" | "ACTIVE" | "ENDED" | "MISSED" | "DECLINED";
+
+export interface CallView {
+  id: string;
+  commissionId: string;
+  status: CallStatus;
+  startedBy: "BUYER" | "MAKER";
+  /** Chi guarda ha avviato la chiamata. */
+  mine: boolean;
+  /** Nome dell'altra parte, per lo squillo e la schermata della chiamata. */
+  otherName: string;
+  /** Lingua in cui chi guarda legge i sottotitoli, e lingua dell'altra parte. */
+  myLanguage: string;
+  otherLanguage: string;
+  createdAt: string;
+  answeredAt: string | null;
+}
+
+export interface CallSession {
+  call: CallView;
+  iceServers: { urls: string | string[]; username?: string; credential?: string }[];
+}
+
+export const callSignalSchema = z.object({
+  kind: z.enum(["offer", "answer", "ice"]),
+  payload: z.record(z.string(), z.unknown()),
+});
+
+export const appointmentSchema = z.object({
+  startsAt: z.iso.datetime({ offset: true, error: "appointment.invalid" }),
+  durationMin: z.coerce.number().int().refine((v) => [20, 30, 45, 60].includes(v), "appointment.duration").default(30),
+  /** Fuso orario di chi propone (es. Europe/Rome), per mostrare l'orario anche dall'altra parte. */
+  timeZone: z.string().max(64).optional(),
+});
+
+export interface AppointmentView {
+  id: string;
+  proposedBy: "BUYER" | "MAKER";
+  mine: boolean;
+  startsAt: string;
+  durationMin: number;
+  status: "PROPOSED" | "ACCEPTED" | "DECLINED" | "CANCELLED";
+  /** Fuso orario dell'altra parte, se noto. */
+  otherTimeZone: string | null;
 }

@@ -23,6 +23,11 @@ const envSchema = z.object({
   /** Traduzione automatica dell'Atelier con l'LLM: auto = attiva se c'è ANTHROPIC_API_KEY. */
   AI_TRANSLATION: z.enum(["auto", "on", "off"]).default("auto"),
   MEDIA_DIR: z.string().default("./uploads"),
+  /** Videochiamate: server STUN pubblico per la connessione diretta; TURN facoltativo per le reti più chiuse. */
+  STUN_URLS: z.string().default("stun:stun.l.google.com:19302,stun:stun1.l.google.com:19302"),
+  TURN_URLS: z.string().optional(),
+  TURN_USERNAME: z.string().optional(),
+  TURN_CREDENTIAL: z.string().optional(),
   PUSH_PROVIDER: z.enum(["console", "memory", "expo"]).default("console"),
 });
 

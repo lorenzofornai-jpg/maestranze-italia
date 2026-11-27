@@ -27,6 +27,19 @@ const SPEECH_LOCALES: Record<string, string> = {
   ko: "ko-KR",
 };
 
+/** Lingua del riconoscimento vocale: quella del browser se coincide, altrimenti la variante principale. */
+export function speechLocale(lang: string) {
+  const nav = typeof navigator !== "undefined" ? navigator.language : "";
+  return nav.toLowerCase().startsWith(lang) ? nav : (SPEECH_LOCALES[lang] ?? lang);
+}
+
+/** Riconoscimento vocale del browser, se c'è (Safari e Chrome lo hanno, con prefisso). */
+export function speechRecognition(): (new () => any) | null {
+  if (typeof window === "undefined") return null;
+  const w = window as any;
+  return w.SpeechRecognition || w.webkitSpeechRecognition || null;
+}
+
 /**
  * Dettatura con il riconoscimento vocale del browser (Safari, Chrome): il testo compare nel campo,
  * chi scrive lo rilegge e lo invia. Nessun audio viene salvato dal portale.
@@ -49,8 +62,7 @@ export function useDictation(lang: string, onText: (text: string) => void) {
     const R = w.SpeechRecognition || w.webkitSpeechRecognition;
     if (!R) return;
     const r = new R();
-    const nav = navigator.language;
-    r.lang = nav.toLowerCase().startsWith(lang) ? nav : (SPEECH_LOCALES[lang] ?? lang);
+    r.lang = speechLocale(lang);
     r.continuous = true;
     r.interimResults = false;
     r.onresult = (e: any) => {

@@ -3,10 +3,11 @@
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useCallback, useEffect, useState } from "react";
-import type { CommissionView, OrderView } from "@maestranze/shared";
+import type { CallSession, CallView, CommissionView, OrderView } from "@maestranze/shared";
 import { Field } from "@/components/auth-shell";
 import { PhaseBadge } from "@/components/atelier-bits";
-import { BriefPanel, Conversation, PaymentsPanel, ProposalPanel, Steps } from "@/components/atelier-room";
+import { AppointmentsPanel, BriefPanel, Conversation, PaymentsPanel, ProposalPanel, Steps } from "@/components/atelier-room";
+import { VideoCall } from "@/components/video-call";
 import { Footer, Header } from "@/components/header";
 import { PaymentAuthorization, type Authorization } from "@/components/payment-authorization";
 import { api, ApiFailure, errorMessage } from "@/lib/api";
@@ -26,6 +27,8 @@ export default function AtelierRoom() {
   const [fields, setFields] = useState({ note: "", carrier: "", trackingCode: "" });
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [error, setError] = useState<string | null>(null);
+  const [callSession, setCallSession] = useState<CallSession | null>(null);
+  const [incoming, setIncoming] = useState<CallView | null>(null);
 
   const load = useCallback(async () => {
     try {
@@ -48,6 +51,49 @@ export default function AtelierRoom() {
     }, 20_000);
     return () => clearInterval(tick);
   }, [load, payment]);
+
+  // Squillo in arrivo: si controlla ogni 4 secondi finché la pagina è aperta e non si è già in chiamata.
+  useEffect(() => {
+    if (callSession) return;
+    let stop = false;
+    const check = async () => {
+      if (stop || document.visibilityState !== "visible") return;
+      try {
+        const r = await api<{ call: CallView | null }>(`/commissions/${id}/calls/current`);
+        setIncoming(r.call && r.call.status === "RINGING" && !r.call.mine ? r.call : null);
+      } catch {}
+    };
+    check();
+    const tick = setInterval(check, 4000);
+    return () => {
+      stop = true;
+      clearInterval(tick);
+    };
+  }, [id, callSession]);
+
+  const startCall = async () => {
+    setError(null);
+    try {
+      setCallSession(await api<CallSession>(`/commissions/${id}/calls`, { body: {} }));
+      setIncoming(null);
+    } catch (err) {
+      setError(errorMessage(t, err));
+    }
+  };
+  const answer = async () => {
+    if (!incoming) return;
+    try {
+      setCallSession(await api<CallSession>(`/calls/${incoming.id}/answer`, { body: {} }));
+    } catch (err) {
+      setError(errorMessage(t, err));
+    }
+    setIncoming(null);
+  };
+  const declineCall = async () => {
+    if (!incoming) return;
+    await api(`/calls/${incoming.id}/decline`, { body: {} }).catch(() => {});
+    setIncoming(null);
+  };
 
   const act = async (path: string, body: object = {}) => {
     setErrors({});
@@ -223,7 +269,7 @@ export default function AtelierRoom() {
           </div>
 
           <div className="atelier-grid">
-            <Conversation c={c} onChange={setC} />
+            <Conversation c={c} onChange={setC} onCall={startCall} />
             <aside className="atelier-side">
               {payment ? (
                 <div className="side-panel">
@@ -244,6 +290,7 @@ export default function AtelierRoom() {
                 <>
                   {hasActions && actions}
                   <ProposalPanel c={c} onChange={setC} onAccept={accept} />
+                  <AppointmentsPanel c={c} onChange={setC} onCall={startCall} />
                   <PaymentsPanel c={c} />
                   <BriefPanel c={c} />
                   {onlySecondary && actions}
@@ -255,6 +302,29 @@ export default function AtelierRoom() {
         </div>
       </main>
       <Footer />
+      {incoming && !callSession && (
+        <div className="call-incoming rise" role="alertdialog" aria-live="assertive">
+          <span className="call-pulse small-pulse" aria-hidden="true" />
+          <p>{t("call.incoming", { name: incoming.otherName })}</p>
+          <div className="call-incoming-actions">
+            <button type="button" className="btn light" onClick={answer}>
+              {t("call.answer")}
+            </button>
+            <button type="button" className="link" onClick={declineCall}>
+              {t("call.decline")}
+            </button>
+          </div>
+        </div>
+      )}
+      {callSession && (
+        <VideoCall
+          session={callSession}
+          onClose={() => {
+            setCallSession(null);
+            load();
+          }}
+        />
+      )}
     </>
   );
 }

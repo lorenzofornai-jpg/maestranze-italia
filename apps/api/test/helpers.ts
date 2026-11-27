@@ -27,12 +27,13 @@ export async function setupApp() {
     MEDIA_DIR: join(tmpdir(), "maestranze-test-media"),
     AI_SEARCH: "off",
     AI_TRANSLATION: "off",
+    STUN_URLS: "stun:stun.example.org:3478",
     PUSH_PROVIDER: "memory",
     security,
   };
   const { db, pool } = createDb(TEST_DB);
   await pool.query(
-    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries, commissions, commission_messages, commission_proposals cascade",
+    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries, commissions, commission_messages, commission_proposals, commission_calls, call_signals, commission_appointments cascade",
   );
   const notifier = new MemoryNotifier();
   const clock = { offsetMs: 0 };

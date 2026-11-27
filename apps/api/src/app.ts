@@ -9,7 +9,8 @@ import { CatalogService } from "./catalog/service";
 import { AtelierService } from "./atelier/service";
 import { DiskMediaStore, MAX_IMAGE_BYTES, PrivateFiles, type MediaStore } from "./lib/media";
 import { LlmTranslator, NoTranslator, type Translator } from "./lib/translate";
-import { atelierRoutes } from "./routes/atelier";
+import { CallService } from "./atelier/calls";
+import { atelierRoutes, callRoutes } from "./routes/atelier";
 import { catalogRoutes } from "./routes/catalog";
 import { orderRoutes } from "./routes/orders";
 import { SandboxPaymentProvider, type PaymentProvider } from "./orders/payments";
@@ -157,6 +158,7 @@ export async function buildApp(opts: {
   const atelier = new AtelierService(opts.db, config, opts.notifier, orderService, translator, new PrivateFiles(`${mediaDir}-private`), opts.now);
   atelierRoutes(app, atelier, { requireSession, ctx, channelOf, strict });
   app.decorate("atelier", atelier);
+  callRoutes(app, new CallService(opts.db, config, atelier, translator, opts.now), { requireSession });
 
   // --- Esplorazione e ricerca -------------------------------------------------------------------
   app.get("/v1/maisons", async (req) => search.search(req.query));

@@ -12,6 +12,7 @@ import {
   messageSchema,
   proposalSchema,
   splitDeposit,
+  type AppointmentView,
   type CommissionAction,
   type CommissionEvent,
   type CommissionMessageView,
@@ -28,6 +29,7 @@ import type { Db } from "../db/client";
 import {
   accounts,
   auditEvents,
+  commissionAppointments,
   commissionMessages,
   commissionProposals,
   commissions,
@@ -145,7 +147,8 @@ export class AtelierService {
 
   // --- Accesso ------------------------------------------------------------------------------------
 
-  private async load(account: Account, id: string) {
+  /** Commissione con le due parti; solo cliente e Maison vi accedono. */
+  async load(account: Account, id: string) {
     const c = await this.db.query.commissions.findFirst({ where: eq(commissions.id, id) });
     if (!c) throw Errors.notFound();
     const maison = (await this.db.query.maisons.findFirst({ where: eq(maisons.id, c.maisonId) }))!;
@@ -187,7 +190,7 @@ export class AtelierService {
     return kinds.length > 0;
   }
 
-  private langOf(party: Party, c: Commission, maker: Account) {
+  langOf(party: Party, c: Commission, maker: Account) {
     return party === "BUYER" ? c.language : maker.locale;
   }
 
@@ -197,12 +200,12 @@ export class AtelierService {
     return out ? { [to]: out } : {};
   }
 
-  private async event(commissionId: string, event: CommissionEvent, data?: Record<string, string | number>) {
+  async event(commissionId: string, event: CommissionEvent, data?: Record<string, string | number>) {
     await this.db.insert(commissionMessages).values({ commissionId, author: "SYSTEM", kind: "EVENT", event, eventData: data ?? null });
     await this.db.update(commissions).set({ updatedAt: this.now() }).where(eq(commissions.id, commissionId));
   }
 
-  private async mail(to: Account, c: Commission, subject: string, body: string) {
+  async mail(to: Account, c: Commission, subject: string, body: string) {
     const url = `${this.config.WEB_ORIGIN}/${to.locale}/area/atelier/${c.id}`;
     await this.notifier.email({
       to: to.email,
@@ -269,7 +272,7 @@ export class AtelierService {
       .where(and(eq(commissions.id, c.id), eq(commissions.status, "REQUESTED")));
   }
 
-  private writable(c: Commission) {
+  writable(c: Commission) {
     if (c.status === "DECLINED" || c.status === "EXPIRED" || c.status === "WITHDRAWN") this.stateError();
   }
 
@@ -702,10 +705,11 @@ export class AtelierService {
   async view(account: Account, id: string): Promise<CommissionView> {
     const { c, maison, party, buyer, maker } = await this.load(account, id);
     const lang = this.langOf(party, c, maker);
-    const [msgs, proposals, orderRows] = await Promise.all([
+    const [msgs, proposals, orderRows, appts] = await Promise.all([
       this.db.query.commissionMessages.findMany({ where: eq(commissionMessages.commissionId, c.id), orderBy: asc(commissionMessages.createdAt) }),
       this.db.query.commissionProposals.findMany({ where: eq(commissionProposals.commissionId, c.id), orderBy: asc(commissionProposals.version) }),
       this.db.query.orders.findMany({ where: eq(orders.commissionId, c.id) }),
+      this.db.query.commissionAppointments.findMany({ where: eq(commissionAppointments.commissionId, c.id), orderBy: asc(commissionAppointments.startsAt) }),
     ]);
     await this.fillTranslations(c, maison, lang, msgs, proposals);
     await this.db
@@ -762,7 +766,7 @@ export class AtelierService {
 
     const actions: CommissionAction[] = [];
     const closed = c.status === "DECLINED" || c.status === "EXPIRED" || c.status === "WITHDRAWN";
-    if (!closed) actions.push("MESSAGE");
+    if (!closed) actions.push("MESSAGE", "CALL", "SCHEDULE");
     if (party === "BUYER") {
       if (phase === "PROPOSED") actions.push("ACCEPT_PROPOSAL", "REQUEST_CHANGES");
       if (phase === "DEPOSIT_DUE") actions.push("PAY_DEPOSIT");
@@ -806,6 +810,15 @@ export class AtelierService {
             autoReleaseAt: balance.status === "SHIPPED" && balance.shippedAt ? new Date(balance.shippedAt.getTime() + AUTO_RELEASE_DAYS * DAY).toISOString() : null,
           }
         : null,
+      appointments: appts.map((a) => ({
+        id: a.id,
+        proposedBy: a.proposedBy as Party,
+        mine: a.proposedBy === party,
+        startsAt: a.startsAt.toISOString(),
+        durationMin: a.durationMin,
+        status: a.status as AppointmentView["status"],
+        otherTimeZone: party === "BUYER" ? a.makerTimeZone : a.buyerTimeZone,
+      })),
       ...(party === "MAKER" ? { payout: { commissionBps: maison.commissionBps } } : {}),
       workStartedAt: c.workStartedAt?.toISOString() ?? null,
       createdAt: c.createdAt.toISOString(),

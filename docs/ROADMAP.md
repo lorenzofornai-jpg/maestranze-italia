@@ -8,6 +8,7 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 - ✅ Esplorazione per territorio e disciplina, ricerca full-text, frasi in linguaggio naturale
 - ✅ Ordini, autorizzazione forte del pagamento, custodia, accredito con commissione, rimborsi, controversie (fornitore *sandbox*)
 - ✅ SMS Twilio, push Expo, build EAS
+- ✅ **Atelier: videochiamate con sottotitoli tradotti e appuntamenti nei due fusi orari**
 - ✅ **Atelier, primo passo (sartoria)**: brief guidato con misure, conversazione tradotta con dettatura e foto private, proposta con versioni, acconto e saldo in custodia, risposta entro 96 ore, avviso sui contatti esterni
 
 ## 1. Verifiche da completare
@@ -78,8 +79,22 @@ Sì anche all'assistente di bottega **con la voce** (passo 3).
   commissione decrescente per i clienti abituali
 
 **Passo 2**
-- ◻️ **Videochiamate nel portale**: su appuntamento (agenda della Maison, fusi orari), sottotitoli tradotti in
-  diretta, registrazione solo con consenso; interprete umano su richiesta per commissioni di valore
+- ✅ **Videochiamate nell'Atelier**: audio e video diretti tra i due browser (WebRTC), il portale fa da centralino
+  (squillo, risposta, rifiuto, chiamata persa dopo 60 secondi); nessuna registrazione, nella conversazione resta
+  solo «Videochiamata · N min»
+- ✅ **Sottotitoli tradotti in diretta**: il browser trascrive chi parla nella sua lingua, il portale traduce con
+  l'LLM, la traduzione arriva all'altro sul canale dati della chiamata; originale consultabile
+- ✅ **Appuntamenti**: proposta di giorno, ora e durata, accettazione o controproposta; ciascuno vede l'orario
+  nel proprio fuso e in quello dell'altra parte; email alla proposta e alla conferma
+- 🔜 **Prova su iPhone e iPad**: Safari può non concedere insieme microfono della chiamata e riconoscimento
+  vocale; se succede, sottotitoli solo da chi parla da computer, oppure trascrizione lato server (vedi sotto)
+- ◻️ **Server TURN** per le reti che bloccano la connessione diretta (reti mobili, aziendali): già previsto in
+  configurazione (`TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL`); servizio gestito (es. Cloudflare, Twilio)
+  o proprio (coturn)
+- ◻️ Trascrizione lato server (es. Whisper, Deepgram) per sottotitoli uguali su ogni dispositivo e più lingue;
+  verbale della chiamata salvato solo con il consenso di entrambi
+- ◻️ Squillo come notifica push sull'app; promemoria via email 1 ora prima dell'appuntamento; file .ics
+- ◻️ Interprete umano su richiesta per commissioni di valore; chiamate a più persone (es. sarto e modellista)
 - ◻️ **Il Concierge** (assistente LLM del portale): aiuta il cliente a scrivere il brief, suggerisce le Maison adatte,
   riassume la conversazione; dichiara sempre di essere un assistente automatico
 

@@ -191,3 +191,73 @@ describe("l'Atelier", () => {
     expect(pub.acceptsCommissions).toBe(true);
   });
 });
+
+describe("videochiamate e appuntamenti", () => {
+  it("squillo, risposta, segnali, sottotitoli tradotti, fine con durata nella conversazione", async () => {
+    const s = await setup();
+    const { id } = (await request(s.buyer.cookie, s.maisonId)).json();
+    const get = async (cookie: string, url: string) => (await t.app.inject({ method: "GET", url, ...as(cookie) })).json();
+
+    const started = (await post(s.buyer.cookie, `/v1/commissions/${id}/calls`)).json();
+    expect(started.call).toMatchObject({ status: "RINGING", mine: true, myLanguage: "en", otherLanguage: "it" });
+    expect(started.iceServers[0].urls).toEqual(["stun:stun.example.org:3478"]);
+    const callId = started.call.id;
+
+    // Il maestro vede lo squillo e risponde
+    const ringing = await get(s.maker.cookie, `/v1/commissions/${id}/calls/current`);
+    expect(ringing.call).toMatchObject({ id: callId, status: "RINGING", mine: false });
+    expect((await post(s.buyer.cookie, `/v1/calls/${callId}/answer`)).statusCode).toBe(409);
+    expect((await post(s.maker.cookie, `/v1/calls/${callId}/answer`)).json().call.status).toBe("ACTIVE");
+
+    // Segnali WebRTC: ciascuno riceve solo quelli dell'altro
+    await post(s.buyer.cookie, `/v1/calls/${callId}/signals`, { kind: "offer", payload: { type: "offer", sdp: "v=0" } });
+    await post(s.maker.cookie, `/v1/calls/${callId}/signals`, { kind: "answer", payload: { type: "answer", sdp: "v=0" } });
+    const forMaker = await get(s.maker.cookie, `/v1/calls/${callId}/signals?after=0`);
+    expect(forMaker.signals.map((x: { kind: string }) => x.kind)).toEqual(["offer"]);
+    const forBuyer = await get(s.buyer.cookie, `/v1/calls/${callId}/signals?after=0`);
+    expect(forBuyer.signals.map((x: { kind: string }) => x.kind)).toEqual(["answer"]);
+    expect((await get(s.buyer.cookie, `/v1/calls/${callId}/signals?after=${forBuyer.last}`)).signals).toEqual([]);
+
+    // Sottotitoli: il cliente parla inglese, il maestro legge in italiano
+    const cap = (await post(s.buyer.cookie, `/v1/calls/${callId}/captions`, { text: "I would like a softer shoulder" })).json();
+    expect(cap).toMatchObject({ translation: "[it] I would like a softer shoulder", language: "it" });
+
+    // Un estraneo non entra
+    const stranger = await activeAccount(t);
+    expect((await get(stranger.cookie, `/v1/calls/${callId}/signals?after=0`)).error.code).toBe("NOT_FOUND");
+
+    t.clock.offsetMs = 3 * 60_000;
+    await post(s.maker.cookie, `/v1/calls/${callId}/end`);
+    t.clock.offsetMs = 0;
+    const v = await view(s.buyer.cookie, id);
+    expect(v.messages.at(-1)).toMatchObject({ event: "CALL_ENDED", eventData: { minutes: 3 } });
+    expect((await get(s.buyer.cookie, `/v1/commissions/${id}/calls/current`)).call).toBeNull();
+  });
+
+  it("squillo senza risposta: chiamata persa", async () => {
+    const s = await setup();
+    const { id } = (await request(s.buyer.cookie, s.maisonId)).json();
+    await post(s.maker.cookie, `/v1/commissions/${id}/calls`);
+    t.clock.offsetMs = 61_000;
+    expect((await t.app.inject({ method: "GET", url: `/v1/commissions/${id}/calls/current`, ...as(s.buyer.cookie) })).json().call).toBeNull();
+    t.clock.offsetMs = 0;
+    expect((await view(s.buyer.cookie, id)).messages.at(-1).event).toBe("CALL_MISSED");
+  });
+
+  it("appuntamento con il fuso orario di ciascuno", async () => {
+    const s = await setup();
+    const { id } = (await request(s.buyer.cookie, s.maisonId)).json();
+    const soon = new Date(Date.now() + 5 * 60_000).toISOString();
+    expect((await post(s.maker.cookie, `/v1/commissions/${id}/appointments`, { startsAt: soon })).json().error.fields.startsAt).toBe("appointment.window");
+    const at = new Date(Date.now() + 2 * 24 * 3600_000).toISOString();
+    const proposed = (await post(s.maker.cookie, `/v1/commissions/${id}/appointments`, { startsAt: at, durationMin: 30, timeZone: "Europe/Rome" })).json();
+    expect(proposed.appointments[0]).toMatchObject({ status: "PROPOSED", mine: true, durationMin: 30 });
+    expect(t.notifier.lastEmailTo(s.buyer.payload.email)!.subject).toMatch(/Video call proposed/);
+    const b = await view(s.buyer.cookie, id);
+    expect(b.appointments[0]).toMatchObject({ mine: false, otherTimeZone: "Europe/Rome" });
+    expect((await post(s.maker.cookie, `/v1/appointments/${b.appointments[0].id}/respond`, { accept: true })).statusCode).toBe(409);
+    const accepted = (await post(s.buyer.cookie, `/v1/appointments/${b.appointments[0].id}/respond`, { accept: true, timeZone: "America/New_York" })).json();
+    expect(accepted.appointments[0].status).toBe("ACCEPTED");
+    expect((await view(s.maker.cookie, id)).appointments[0].otherTimeZone).toBe("America/New_York");
+  });
+});
