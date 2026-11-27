@@ -91,7 +91,10 @@ Sì anche all'assistente di bottega **con la voce** (passo 3).
 - ◻️ **Server TURN** per le reti che bloccano la connessione diretta (reti mobili, aziendali): già previsto in
   configurazione (`TURN_URLS`, `TURN_USERNAME`, `TURN_CREDENTIAL`); servizio gestito (es. Cloudflare, Twilio)
   o proprio (coturn)
-- ◻️ Trascrizione lato server (es. Whisper, Deepgram) per sottotitoli uguali su ogni dispositivo e più lingue;
+- ✅ Ognuno vede solo i sottotitoli dell'altro, sempre nella propria lingua; selettore «Parlo in» per chi cambia
+  lingua durante la chiamata (il riconoscimento del browser ascolta una lingua alla volta)
+- ◻️ Trascrizione lato server (es. Whisper, Deepgram) con **riconoscimento automatico della lingua di ogni
+  frase** (niente più selettore), sottotitoli uguali su ogni dispositivo;
   verbale della chiamata salvato solo con il consenso di entrambi
 - ◻️ Squillo come notifica push sull'app; promemoria via email 1 ora prima dell'appuntamento; file .ics
 - ◻️ Interprete umano su richiesta per commissioni di valore; chiamate a più persone (es. sarto e modellista)

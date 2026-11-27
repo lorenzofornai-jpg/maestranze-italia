@@ -2,7 +2,7 @@
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { useCallback, useEffect, useRef, useState } from "react";
-import { RTL_LANGUAGES, type CallSession, type CallStatus } from "@maestranze/shared";
+import { CONVERSATION_LANGUAGES, RTL_LANGUAGES, type CallSession, type CallStatus } from "@maestranze/shared";
 import { speechLocale, speechRecognition } from "@/components/atelier-bits";
 import { api } from "@/lib/api";
 import { useT } from "@/lib/i18n-client";
@@ -27,7 +27,10 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
   const [subtitles, setSubtitles] = useState(true);
   const [showOriginal, setShowOriginal] = useState(false);
   const [theirs, setTheirs] = useState<Caption[]>([]);
-  const [mine, setMine] = useState<string>("");
+  /** Lingua in cui chi parla sta parlando: il riconoscimento vocale ne ascolta una alla volta. */
+  const [spoken, setSpoken] = useState(call.myLanguage);
+  const spokenRef = useRef(spoken);
+  spokenRef.current = spoken;
   const [noSpeech, setNoSpeech] = useState(false);
   const [, tick] = useState(0);
 
@@ -82,29 +85,26 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
     }
     if (recognizer.current || closed.current) return;
     const r = new R();
-    r.lang = speechLocale(call.myLanguage);
+    r.lang = speechLocale(spokenRef.current);
     // Una frase alla volta: su iPhone la modalità continua ripete o spezza le frasi; si riavvia a ogni fine.
     r.continuous = false;
-    r.interimResults = true;
+    r.interimResults = false;
     r.onresult = (e: any) => {
-      let interim = "";
       for (let i = e.resultIndex; i < e.results.length; i++) {
         const text = String(e.results[i][0].transcript).trim();
         if (!text) continue;
         if (e.results[i].isFinal) {
-          setMine(text);
           // Stessa frase consegnata due volte dal riconoscimento: si manda una volta sola.
           if (text === lastSent.current.text && Date.now() - lastSent.current.at < 4000) continue;
           lastSent.current = { text, at: Date.now() };
-          api<{ text: string; translation: string | null }>(`${base}/captions`, { body: { text } })
+          api<{ text: string; translation: string | null }>(`${base}/captions`, { body: { text, spokenLanguage: spokenRef.current } })
             .then((res) => {
               const msg = JSON.stringify({ text: res.translation ?? text, original: res.translation && res.translation !== text ? text : null, untranslated: !res.translation });
               if (channel.current?.readyState === "open") channel.current.send(msg);
             })
             .catch(() => {});
-        } else interim += text + " ";
+        }
       }
-      if (interim) setMine(interim.trim());
     };
     r.onerror = (e: any) => {
       if (e.error === "not-allowed" || e.error === "service-not-allowed") setNoSpeech(true);
@@ -120,7 +120,7 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
     } catch {
       recognizer.current = null;
     }
-  }, [base, call.myLanguage]);
+  }, [base]);
 
   const onChannel = useCallback(
     (dc: RTCDataChannel) => {
@@ -238,9 +238,18 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
         recognizer.current?.abort?.();
       } catch {}
       recognizer.current = null;
-      setMine("");
     }
   }, [phase, subtitles, startRecognition]);
+
+  const changeSpoken = (lang: string) => {
+    setSpoken(lang);
+    spokenRef.current = lang;
+    try {
+      recognizer.current?.abort?.();
+    } catch {}
+    recognizer.current = null;
+    if (subtitlesRef.current && phaseRef.current === "live") setTimeout(startRecognition, 150);
+  };
 
   // I sottotitoli svaniscono dopo qualche secondo.
   useEffect(() => {
@@ -297,11 +306,6 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
               {c.untranslated && <span className="caption-note"> · {t("call.subtitles.untranslated")}</span>}
             </p>
           ))}
-          {mine && (
-            <p className="caption mine" dir={rtl}>
-              <span>{t("call.subtitles.mine")}:</span> {mine}
-            </p>
-          )}
           {noSpeech && <p className="caption-note">{t("call.subtitles.unsupported")}</p>}
         </div>
       )}
@@ -339,6 +343,17 @@ export function VideoCall({ session, onClose }: { session: CallSession; onClose:
               <span>{t("at.show_original")}</span>
             </button>
           )}
+          <label className="call-btn call-lang" title={t("call.speaking")}>
+            <span className="call-lang-code">{spoken.toUpperCase()}</span>
+            <span>{t("call.speaking")}</span>
+            <select value={spoken} onChange={(e) => changeSpoken(e.target.value)} aria-label={t("call.speaking")}>
+              {CONVERSATION_LANGUAGES.map(([code, name]) => (
+                <option key={code} value={code}>
+                  {name}
+                </option>
+              ))}
+            </select>
+          </label>
           <button type="button" className="call-btn hangup" onClick={hangUp}>
             <svg viewBox="0 0 24 24" aria-hidden="true">
               <path d="M3 14c5-5 13-5 18 0l-2.5 2.5-3-2v-2.5c-2.5-1-4.5-1-7 0V14.5l-3 2z" />

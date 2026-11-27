@@ -224,6 +224,10 @@ describe("videochiamate e appuntamenti", () => {
     // La battuta successiva si traduce con il contesto di quelle precedenti, in modalità sottotitolo
     await post(s.maker.cookie, `/v1/calls/${callId}/captions`, { text: "Certo, la facciamo a camicia" });
     expect(t.translator.lastContext).toMatchObject({ mode: "caption", from: "it", previous: [{ speaker: "Client", text: "I would like a softer shoulder" }] });
+    // Il maestro passa all'inglese: il cliente riceve comunque il sottotitolo nella sua lingua
+    const en = (await post(s.maker.cookie, `/v1/calls/${callId}/captions`, { text: "Two fittings will be enough", spokenLanguage: "en" })).json();
+    expect(en).toMatchObject({ translation: "[en] Two fittings will be enough", language: "en" });
+    expect(t.translator.lastContext).toMatchObject({ from: "en" });
 
     // Un estraneo non entra
     const stranger = await activeAccount(t);

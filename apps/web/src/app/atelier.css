@@ -947,3 +947,21 @@
   line-height: 1.25;
   text-transform: capitalize;
 }
+
+/* Lingua in cui si parla: il menu nativo, invisibile, copre il pulsante. */
+.call-lang {
+  position: relative;
+}
+.call-lang-code {
+  font-family: var(--serif);
+  font-size: 19px;
+  letter-spacing: 0.06em;
+  line-height: 22px;
+}
+.call-lang select {
+  position: absolute;
+  inset: 0;
+  opacity: 0;
+  cursor: pointer;
+  font-size: 16px;
+}

@@ -2,6 +2,7 @@ import { and, asc, desc, eq, gt, inArray } from "drizzle-orm";
 import {
   CALL_IDLE_SECONDS,
   CALL_RING_SECONDS,
+  LANGUAGE_CODES,
   appointmentSchema,
   callSignalSchema,
   type CallSession,
@@ -212,13 +213,15 @@ export class CallService {
   }
 
   /** Sottotitolo: traduce nella lingua dell'altra parte ciò che chi parla ha appena detto. */
-  async caption(account: Account, callId: string, text: unknown) {
+  async caption(account: Account, callId: string, text: unknown, spoken?: unknown) {
     const { call, party } = await this.own(account, callId);
     if (call.status !== "ACTIVE") this.stateError();
     const line = typeof text === "string" ? text.trim().slice(0, 500) : "";
     if (!line) throw Errors.validation({ text: "caption.empty" });
     const { c, maison, maker } = await this.atelier.load(account, call.commissionId);
-    const from = this.atelier.langOf(party, c, maker);
+    // Lingua in cui chi parla ha detto la frase (può cambiarla durante la chiamata); si traduce sempre
+    // nella lingua scelta da chi ascolta, qualunque lingua l'altro abbia usato.
+    const from = typeof spoken === "string" && LANGUAGE_CODES.includes(spoken as never) ? spoken : this.atelier.langOf(party, c, maker);
     const to = this.atelier.langOf(party === "BUYER" ? "MAKER" : "BUYER", c, maker);
     // Le battute restano in memoria solo durante la chiamata, come contesto: non si salvano.
     const now = this.now().getTime();
@@ -226,7 +229,6 @@ export class CallService {
     const speaker = party === "BUYER" ? "Client" : "Artisan";
     this.transcripts.set(callId, [...lines, { speaker, text: line, at: now }]);
     if (this.transcripts.size > 500) this.transcripts.delete(this.transcripts.keys().next().value!);
-    if (from === to) return { text: line, translation: line, language: to };
     const translation = this.translator.enabled
       ? await this.translator.translate(line, to, { discipline: maison.discipline, mode: "caption", from, previous: lines.map(({ speaker, text }) => ({ speaker, text })) })
       : null;

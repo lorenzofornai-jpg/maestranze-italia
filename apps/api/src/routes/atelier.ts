@@ -86,7 +86,7 @@ export function callRoutes(
   app.get<P & { Querystring: { after?: string } }>("/v1/calls/:id/signals", live, async (req) =>
     calls.signals(acct(req), uuid(req.params.id), Math.max(0, Number(req.query.after) || 0)),
   );
-  app.post<P>("/v1/calls/:id/captions", live, async (req) => calls.caption(acct(req), uuid(req.params.id), body(req).text));
+  app.post<P>("/v1/calls/:id/captions", live, async (req) => calls.caption(acct(req), uuid(req.params.id), body(req).text, body(req).spokenLanguage));
 
   app.post<P>("/v1/commissions/:id/appointments", me, async (req) => calls.propose(acct(req), uuid(req.params.id), req.body));
   app.post<P>("/v1/appointments/:id/respond", me, async (req) => calls.respond(acct(req), uuid(req.params.id), body(req)));
