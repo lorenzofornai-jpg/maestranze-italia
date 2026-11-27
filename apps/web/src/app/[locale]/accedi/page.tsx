@@ -227,7 +227,7 @@ export default function LoginPage() {
                 : t("mfa.method.TOTP.body")}
           </p>
           {method === "SMS" && devCode && <p className="notice">{t("dev.sms_code", { code: devCode })}</p>}
-          <OtpInput value={code} onChange={setCode} onComplete={verify} />
+          <OtpInput value={code} onChange={setCode} />
           {error && <p className="notice error">{error}</p>}
           <div className="auth-actions">
             <div style={{ display: "flex", gap: 24, flexWrap: "wrap" }}>

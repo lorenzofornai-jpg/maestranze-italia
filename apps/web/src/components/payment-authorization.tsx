@@ -138,7 +138,7 @@ export function PaymentAuthorization({
         >
           <p className="small">{method === "SMS" ? t("mfa.code.sent", { phone: authorization.maskedPhone }) : t("mfa.method.TOTP.body")}</p>
           {method === "SMS" && devCode && <p className="notice">{t("dev.sms_code", { code: devCode })}</p>}
-          <OtpInput value={code} onChange={setCode} onComplete={verify} />
+          <OtpInput value={code} onChange={setCode} />
           <div className="auth-actions">
             <div style={{ display: "flex", gap: 20, flexWrap: "wrap" }}>
               {method === "SMS" &&

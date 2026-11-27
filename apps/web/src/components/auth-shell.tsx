@@ -87,15 +87,14 @@ export function Field({
   );
 }
 
-/** Sei caselle per il codice OTP, con incolla e avanzamento automatico. */
-export function OtpInput({ value, onChange, onComplete }: { value: string; onChange: (v: string) => void; onComplete?: (v: string) => void }) {
+/** Sei caselle per il codice OTP, con incolla e avanzamento automatico. Non invia da sola: si conferma col pulsante. */
+export function OtpInput({ value, onChange }: { value: string; onChange: (v: string) => void }) {
   const t = useT();
   const digits = Array.from({ length: 6 }, (_, i) => value[i] ?? "");
   const set = (next: string, focusIndex?: number, form?: HTMLElement | null) => {
     const clean = next.replace(/\D/g, "").slice(0, 6);
     onChange(clean);
     if (focusIndex !== undefined) (form?.querySelectorAll("input")[Math.min(focusIndex, 5)] as HTMLInputElement | undefined)?.focus();
-    if (clean.length === 6) onComplete?.(clean);
   };
   return (
     <div className="otp" role="group" aria-label={t("mfa.code.label")}>
