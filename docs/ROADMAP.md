@@ -40,8 +40,29 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 ## 5. Relazione cliente–Maison
 - ◻️ Messaggistica per ordine e per Maison, con notifiche
 - ◻️ Richieste di preventivo (RFQ) e forniture ricorrenti per ristoranti e hotel
-- ◻️ Commissioni su misura (sartoria, ceramica): bozzetti, acconti, prove
+- 🔜 Commissioni su misura (sartoria, ceramica, selleria, cantina): vedi **5b. L'Atelier**
 - ◻️ Recensioni verificate (solo dopo ordine concluso)
+
+## 5b. L'Atelier — su misura e su commissione (in progettazione)
+Uno spazio privato per ogni commissione, dentro il portale e l'app, dove cliente e Maison si conoscono prima
+dell'acquisto e dove l'acquisto si conclude.
+- ◻️ **Brief guidato per arte**: sartoria (capo, occasione, tessuto, misure, data), ceramica (servizio, quantità,
+  decoro, logo per hotel), cantina (etichetta personalizzata, evento), selleria. Foto e riferimenti allegati
+- ◻️ **Conversazione tradotta**: ognuno scrive e legge nella propria lingua, con l'originale sempre consultabile;
+  glossario dei termini di mestiere per arte (es. «spalla napoletana»); messaggi vocali trascritti e tradotti
+- ◻️ **Proposta della Maison**: bozzetto, prezzo, tempi, tappe (acconto · prova · saldo), versioni successive;
+  accettazione con autorizzazione forte, pagamenti a tappe in custodia
+- ◻️ **Videochiamate nel portale**: su appuntamento (agenda della Maison, fusi orari), sottotitoli tradotti in
+  diretta, registrazione solo con consenso; interprete umano su richiesta per commissioni di valore
+- ◻️ **Il Concierge** (assistente LLM del portale): aiuta il cliente a scrivere il brief, suggerisce le Maison adatte,
+  riassume la conversazione; dichiara sempre di essere un assistente automatico
+- ◻️ **Assistenti di bottega** (LLM per singola Maison, su contenuti approvati dalla Maison): guida alla presa delle
+  misure, abbinamenti del sommelier, scelta dei materiali. Non promettono prezzi né tempi: la proposta è del maestro
+- ◻️ **Restare nel portale**: valore che fuori non c'è (traduzione, archivio, custodia dei pagamenti, garanzia,
+  controversie); avviso gentile quando un messaggio contiene telefono, email o IBAN; clausola di non aggiramento
+  nel contratto Maison (da verificare con un legale, anche rispetto al regolamento UE 2019/1150); commissione
+  decrescente per i clienti abituali
+- ◻️ **Privacy**: misure e foto del corpo con consenso esplicito, visibili solo alla Maison, conservazione limitata
 
 ## 6. Esperienza ed editoriale
 - ◻️ Collezioni curate a tema (es. «La tavola dell'Appennino»), pagina per regione
@@ -85,3 +106,18 @@ Nessuno di questi interventi richiede di riscrivere l'app: sono pezzi da sostitu
   migliaia di prodotti; fino ad allora basta PostgreSQL
 - ◻️ Repliche di sola lettura del database per elenchi e ricerca, se il carico lo richiede
 - ◻️ Test di carico periodici
+
+## 10. Temi strategici aperti (brainstorming di novembre 2026)
+- ◻️ **Identità**: cosa distingue Maestranze da un e-commerce (selezione, racconto, relazione); B2B come cuore
+  economico, privato come immagine: decidere quale guida il prodotto
+- ◻️ **Modello di ricavo**: oltre la commissione, abbonamento Maison (vetrina premium), abbonamento professionisti,
+  servizi a pagamento (fotografia, traduzioni, logistica, export); verificare i margini reali delle Maison
+- ◻️ **Su misura e su commissione**: vedi 5b
+- ◻️ **Il professionista che ordina**: ordini ricorrenti, listini dedicati, pagamento a 30/60 giorni, fattura
+  elettronica, più utenti per azienda con permessi
+- ◻️ **Esperienze**: visite in bottega, degustazioni, giornate col maestro, con tono non turistico
+- ◻️ **Ruolo dell'app**: solo chiave d'accesso elegante, o anche vetrina e ordini
+- ◻️ **Lancio**: quante Maison (poche eccellenti o molte buone), quale territorio o arte per primi, figura sul campo
+  («scout» delle Maison) per i maestri poco digitali
+- ◻️ **Fiducia e qualità**: recensioni sì o no, «garanzia Maestranze», gestione delle consegne non conformi su
+  prodotti artigianali per natura diversi uno dall'altro
