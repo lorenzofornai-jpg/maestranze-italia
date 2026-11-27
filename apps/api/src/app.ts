@@ -147,6 +147,8 @@ export async function buildApp(opts: {
   };
 
   app.get("/health", async () => ({ ok: true }));
+  // La porta dell'API aperta per sbaglio dal browser porta al sito, invece di un errore.
+  app.get("/", async (_req, reply) => reply.redirect(`${config.WEB_ORIGIN}/it`));
   catalogRoutes(app, catalog, media, { requireSession, optionalSession });
   const orderService = new OrderService(opts.db, config, opts.notifier, auth, opts.payments ?? new SandboxPaymentProvider(), opts.now);
   orderRoutes(app, orderService, { requireSession, ctx, channelOf, strict });
