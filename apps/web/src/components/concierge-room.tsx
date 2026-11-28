@@ -132,11 +132,14 @@ export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean;
   const [text, setText] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hour, setHour] = useState<number | null>(null);
+  const [called, setCalled] = useState(false);
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setHour(new Date().getHours());
+    // Arrivando da «Chiami il Concierge», il campanello suona da solo.
+    if (new URLSearchParams(window.location.search).has("chiama")) setTimeout(() => setCalled(true), 600);
     fetch("/api/v1/concierge/status")
       .then((r) => r.json())
       .then((r) => setEnabled(!!r.enabled))
@@ -233,6 +236,12 @@ export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean;
 
   const greeting = hour == null ? "" : hour >= 5 && hour < 17 ? t("cg.morning") : t("cg.evening");
   const empty = items.length === 0 && !live;
+  // Si suona il campanello: il Concierge arriva e il cliente può scrivergli.
+  const callConcierge = () => {
+    if (called || !empty) return input.current?.focus();
+    setCalled(true);
+    setTimeout(() => input.current?.focus(), 1200);
+  };
 
   return (
     <div className={`cg-room ${empty ? "empty" : ""} ${compact ? "compact" : ""}`}>
@@ -255,9 +264,16 @@ export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean;
         </header>
       ) : (
         <header className="cg-welcome">
-          <span className="cg-mark">
-            <ConciergeSigil present={!empty} writing={busy} size={58} />
-          </span>
+          <button
+            type="button"
+            className={`cg-mark cg-bell-button ${called || !empty ? "called" : ""}`}
+            onClick={callConcierge}
+            aria-label={t("cg.ring")}
+            title={called || !empty ? t("cg.name") : t("cg.ring")}
+          >
+            <ConciergeSigil present={called || !empty} writing={busy} size={58} />
+          </button>
+          {!called && empty && <span className="cg-ring-hint">{t("cg.ring")}</span>}
           <span className="eyebrow">{t("cg.eyebrow")}</span>
           <h1 className="display cg-greeting">{greeting || "\u00a0"}</h1>
           <p className="cg-intro">{t("cg.intro")}</p>

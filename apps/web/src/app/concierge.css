@@ -962,3 +962,25 @@ body:has(.concierge) .to-top {
     animation: none !important;
   }
 }
+
+/* Il campanello si suona: è un pulsante. */
+.cg-bell-button {
+  appearance: none;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+}
+.cg-bell-button:not(.called):hover .cg-emblem .bell {
+  animation: cg-ring 1.9s var(--ease) 1;
+}
+.cg-ring-hint {
+  margin-top: -8px;
+  font-family: var(--serif);
+  font-style: italic;
+  font-size: 15px;
+  color: #8f8571;
+  animation: fade 1200ms var(--ease) 1200ms both;
+}

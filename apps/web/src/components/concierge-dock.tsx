@@ -50,7 +50,7 @@ export function ConciergeDock() {
           <span className="cg-dock-label">{label}</span>
         </button>
       ) : (
-        <Link href={`/${locale}/concierge`} className="cg-dock" aria-label={label}>
+        <Link href={`/${locale}/concierge?chiama=1`} className="cg-dock" aria-label={label}>
           <ConciergeSigil present={false} size={40} />
           <span className="cg-dock-label">{label}</span>
         </Link>
