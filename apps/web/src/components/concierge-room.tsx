@@ -4,6 +4,7 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { pick, type ConciergeEvent, type ConciergeItem } from "@maestranze/shared";
 import { useLocale, useT } from "@/lib/i18n-client";
+import { ConciergeEmblem } from "@/components/concierge-emblem";
 
 const STORE = "mi_concierge";
 
@@ -38,7 +39,10 @@ function Item({ item, sessionId }: { item: ConciergeItem; sessionId: string | nu
   if (item.kind === "concierge")
     return (
       <li className="cg-line">
-        <span className="cg-who">{t("cg.name")}</span>
+        <span className="cg-who">
+          <ConciergeEmblem size={22} />
+          {t("cg.name")}
+        </span>
         <div className="cg-prose" dir="auto">
           <Prose text={item.text} />
         </div>
@@ -128,6 +132,16 @@ export function ConciergeRoom() {
   const [text, setText] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hour, setHour] = useState<number | null>(null);
+  // Il campanello suona una volta all'arrivo.
+  const [greetRing, setGreetRing] = useState(false);
+  useEffect(() => {
+    const on = setTimeout(() => setGreetRing(true), 700);
+    const off = setTimeout(() => setGreetRing(false), 2600);
+    return () => {
+      clearTimeout(on);
+      clearTimeout(off);
+    };
+  }, []);
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -239,8 +253,8 @@ export function ConciergeRoom() {
   return (
     <div className={`cg-room ${empty ? "empty" : ""}`}>
       <header className="cg-welcome">
-        <span className="cg-mark" aria-hidden="true">
-          M
+        <span className="cg-mark">
+          <ConciergeEmblem size={54} ring={greetRing} />
         </span>
         <span className="eyebrow">{t("cg.eyebrow")}</span>
         <h1 className="display cg-greeting">{greeting || " "}</h1>
@@ -257,7 +271,10 @@ export function ConciergeRoom() {
           ))}
           {live && (
             <li className="cg-line">
-              <span className="cg-who">{t("cg.name")}</span>
+              <span className="cg-who">
+                <ConciergeEmblem size={22} ring />
+                {t("cg.name")}
+              </span>
               <div className="cg-prose" dir="auto">
                 <Prose text={live} />
               </div>
@@ -265,12 +282,8 @@ export function ConciergeRoom() {
           )}
           {busy && !live && (
             <li className="cg-writing">
+              <ConciergeEmblem size={30} ring />
               <span>{t("cg.writing")}</span>
-              <span className="cg-dots" aria-hidden="true">
-                <i />
-                <i />
-                <i />
-              </span>
             </li>
           )}
         </ol>

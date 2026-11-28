@@ -540,3 +540,125 @@ body:has(.concierge) .to-top {
   color: #b89a64;
   border-color: rgba(184, 154, 100, 0.5);
 }
+
+/* --- L'emblema: campanello da banco in ottone ------------------------------------------------ */
+
+.cg-emblem {
+  display: inline-block;
+  flex: none;
+  color: #b89a64;
+}
+.cg-emblem svg {
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.4;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.cg-emblem .knob {
+  fill: currentColor;
+  stroke: none;
+}
+.cg-emblem .shine {
+  stroke-width: 1;
+  opacity: 0.55;
+}
+.cg-emblem .bell {
+  transform-box: view-box;
+  transform-origin: 32px 40px;
+}
+.cg-emblem .wave {
+  opacity: 0;
+  stroke-width: 1.1;
+}
+.cg-emblem.ringing .bell {
+  animation: cg-ring 1.9s var(--ease) infinite;
+}
+.cg-emblem.ringing .w1 {
+  animation: cg-wave 1.9s var(--ease) infinite;
+}
+.cg-emblem.ringing .w2 {
+  animation: cg-wave 1.9s var(--ease) 0.18s infinite;
+}
+@keyframes cg-ring {
+  0%,
+  45%,
+  100% {
+    transform: rotate(0);
+  }
+  6% {
+    transform: rotate(-9deg);
+  }
+  13% {
+    transform: rotate(7deg);
+  }
+  20% {
+    transform: rotate(-4deg);
+  }
+  27% {
+    transform: rotate(2deg);
+  }
+  34% {
+    transform: rotate(0);
+  }
+}
+@keyframes cg-wave {
+  0%,
+  4% {
+    opacity: 0;
+  }
+  12% {
+    opacity: 0.9;
+  }
+  45%,
+  100% {
+    opacity: 0;
+  }
+}
+
+/* Insegna all'ingresso: luce che respira dietro il campanello. */
+.cg-mark {
+  width: 76px;
+  height: 76px;
+  font-size: 0;
+  position: relative;
+}
+.cg-mark::after {
+  content: "";
+  position: absolute;
+  inset: -14px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(184, 154, 100, 0.22) 0%, rgba(184, 154, 100, 0) 65%);
+  animation: cg-breathe 5s ease-in-out infinite;
+  pointer-events: none;
+}
+@keyframes cg-breathe {
+  0%,
+  100% {
+    opacity: 0.35;
+    transform: scale(0.92);
+  }
+  50% {
+    opacity: 1;
+    transform: scale(1.05);
+  }
+}
+.cg-line .cg-who::before {
+  display: none;
+}
+.cg-line .cg-who {
+  gap: 10px;
+}
+.cg-writing .cg-emblem {
+  margin-left: -4px;
+}
+@media (prefers-reduced-motion: reduce) {
+  .cg-emblem .bell,
+  .cg-emblem .wave,
+  .cg-mark::after {
+    animation: none !important;
+  }
+}
