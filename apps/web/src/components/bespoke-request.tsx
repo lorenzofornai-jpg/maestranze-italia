@@ -134,7 +134,8 @@ export function BespokeRequest({ maison }: { maison: { id: string; slug: string;
   if (user === undefined) return <div style={{ minHeight: "50svh" }} />;
 
   if (!user || user.role !== "BUYER") {
-    const next = `/${locale}/maison/${maison.slug}/su-misura`;
+    // Dopo l'accesso si torna qui, con l'eventuale bozza del Concierge.
+    const next = typeof window !== "undefined" ? window.location.pathname + window.location.search : `/${locale}/maison/${maison.slug}/su-misura`;
     return (
       <div className="bespoke-gate rise">
         <span className="eyebrow">{t("req.eyebrow", { maison: maison.name })}</span>

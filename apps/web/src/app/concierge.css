@@ -984,3 +984,23 @@ body:has(.concierge) .to-top {
   color: #8f8571;
   animation: fade 1200ms var(--ease) 1200ms both;
 }
+
+.cg-draft-gate {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  border-top: 1px solid var(--line);
+  padding-top: 18px;
+}
+.cg-draft-gate p {
+  margin: 0;
+  font-size: 14px;
+  color: var(--ink-2);
+}
+.cg-draft-actions {
+  display: flex;
+  align-items: center;
+  gap: 26px;
+  flex-wrap: wrap;
+  position: relative;
+}

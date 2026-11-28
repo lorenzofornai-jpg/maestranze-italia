@@ -175,6 +175,18 @@ const card = (m: PublicMaison): ConciergeMaisonCard => ({
   acceptsCommissions: m.acceptsCommissions,
 });
 
+/** Chi è l'ospite: il Concierge lo sa, e si regola su accesso e profilo. */
+function guestContext(account: Account | undefined) {
+  if (!account) {
+    return `About the guest: not signed in. Exploring and advice need no profile. To send a request to a Maison or to order, a client profile is needed (free, reviewed by the portal). Before preparing a bespoke draft, ask once, courteously, whether they already have a profile; whatever the answer, you may prepare the draft: the card lets them sign in or request access, and the draft waits for them. Never ask for passwords or personal data.`;
+  }
+  if (account.role === "MAKER") {
+    return `About the guest: signed in as a Maison (a workshop on the portal), not as a client. They cannot send bespoke requests or orders; help them understand how clients see the portal, and suggest a client profile if they want to buy.`;
+  }
+  const kind = account.subjectType === "COMPANY" ? `a business client (${account.companyName ?? "company"})` : "a private client";
+  return `About the guest: signed in as ${kind}; first name ${account.firstName}. They can send the bespoke draft themselves from the card. You may greet them by first name once; do not assume gender.`;
+}
+
 export class ConciergeService {
   constructor(
     private db: Db,
@@ -215,7 +227,7 @@ export class ConciergeService {
     return d;
   }
 
-  private async runTool(name: string, input: unknown, s: ConciergeSession, emit: (e: ConciergeEvent) => void, items: ConciergeItem[], locale: string) {
+  private async runTool(name: string, input: unknown, s: ConciergeSession, emit: (e: ConciergeEvent) => void, items: ConciergeItem[], locale: string, account?: Account) {
     if (name === "search_maisons") {
       const p = SearchInput.safeParse(input);
       if (!p.success) return { error: "invalid input" };
@@ -278,7 +290,12 @@ export class ConciergeService {
       const item: ConciergeItem = { kind: "draft", draft };
       items.push(item);
       emit({ type: "item", item });
-      return { ok: true, note: "The draft is shown to the guest with a button to open the request page, where they review and send it." };
+      return {
+        ok: true,
+        note: account
+          ? "The draft is shown to the guest with a button to open the request page, where they review and send it."
+          : "The draft is shown to the guest. They are not signed in: the card offers to sign in or request access, and the draft waits for them. Mention this briefly.",
+      };
     }
     return { error: "unknown tool" };
   }
@@ -302,7 +319,7 @@ export class ConciergeService {
     try {
       for (let round = 0; round <= MAX_TOOL_ROUNDS; round++) {
         let said = "";
-        const msg = await this.model.turn({ system: SYSTEM, tools: TOOLS, messages: history }, (d) => {
+        const msg = await this.model.turn({ system: `${SYSTEM}\n\n${guestContext(account)}`, tools: TOOLS, messages: history }, (d) => {
           said += d;
           emit({ type: "text", delta: d });
         });
@@ -321,7 +338,7 @@ export class ConciergeService {
         }
         const results = [];
         for (const u of uses) {
-          const out = await this.runTool(u.name, u.input, s, emit, items, locale).catch(() => ({ error: "temporarily unavailable" }));
+          const out = await this.runTool(u.name, u.input, s, emit, items, locale, account).catch(() => ({ error: "temporarily unavailable" }));
           results.push({ type: "tool_result", tool_use_id: u.id, content: JSON.stringify(out), ...("error" in out ? { is_error: true } : {}) });
         }
         history.push({ role: "user", content: results });

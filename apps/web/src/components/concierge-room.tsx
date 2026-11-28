@@ -26,7 +26,9 @@ export function Prose({ text }: { text: string }) {
   );
 }
 
-function Item({ item, sessionId }: { item: ConciergeItem; sessionId: string | null }) {
+type Guest = { role: "BUYER" | "MAKER" } | null | undefined;
+
+function Item({ item, sessionId, guest }: { item: ConciergeItem; sessionId: string | null; guest: Guest }) {
   const t = useT();
   const locale = useLocale();
   if (item.kind === "guest")
@@ -108,11 +110,29 @@ function Item({ item, sessionId }: { item: ConciergeItem; sessionId: string | nu
           «{b.description}»
         </p>
       )}
-      {sessionId && (
-        <Link href={`/${locale}/maison/${d.maison.slug}/su-misura?bozza=${d.id}&conversazione=${sessionId}`} className="btn">
-          {t("cg.draft.open")} <span className="arrow" />
-        </Link>
-      )}
+      {sessionId && guest?.role !== "MAKER" && (() => {
+        const draftUrl = `/${locale}/maison/${d.maison.slug}/su-misura?bozza=${d.id}&conversazione=${sessionId}`;
+        if (guest === null)
+          return (
+            <div className="cg-draft-gate">
+              <p>{t("cg.draft.signin")}</p>
+              <div className="cg-draft-actions">
+                <Link href={`/${locale}/accedi?next=${encodeURIComponent(draftUrl)}`} className="btn">
+                  {t("nav.signin")} <span className="arrow" />
+                </Link>
+                <Link href={`/${locale}/registrati`} className="link">
+                  {t("cg.draft.register")}
+                </Link>
+              </div>
+            </div>
+          );
+        return (
+          <Link href={draftUrl} className="btn">
+            {t("cg.draft.open")} <span className="arrow" />
+          </Link>
+        );
+      })()}
+      {guest?.role === "MAKER" && <p className="cg-draft-lead">{t("req.buyers_only")}</p>}
     </li>
   );
 }
@@ -133,6 +153,14 @@ export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean;
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hour, setHour] = useState<number | null>(null);
   const [called, setCalled] = useState(false);
+  // Chi è l'ospite: serve al biglietto della bozza (accedere prima di inviarla).
+  const [guest, setGuest] = useState<Guest>(undefined);
+  useEffect(() => {
+    fetch("/api/v1/me", { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((r) => setGuest(r?.user ? { role: r.user.role } : null))
+      .catch(() => setGuest(null));
+  }, []);
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -286,7 +314,7 @@ export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean;
       {!empty && (
         <ol className="cg-thread" aria-live="polite">
           {items.map((item, i) => (
-            <Item key={i} item={item} sessionId={sessionId} />
+            <Item key={i} item={item} sessionId={sessionId} guest={guest} />
           ))}
           {live && (
             <li className="cg-line">

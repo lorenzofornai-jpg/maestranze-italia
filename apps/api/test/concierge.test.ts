@@ -13,11 +13,13 @@ type Block = { type: string; [k: string]: unknown };
 /** Modello finto: risponde con un copione di turni e registra ciò che riceve. */
 function scripted(turns: { text?: string; tools?: { name: string; input: unknown }[] }[]) {
   const seen: unknown[][] = [];
+  const systems: string[] = [];
   let i = 0;
   const model: ConciergeModel = {
     enabled: true,
     async turn(input, onText) {
       seen.push(JSON.parse(JSON.stringify(input.messages)));
+      systems.push(input.system);
       const step = turns[i++] ?? { text: "…" };
       const content: Block[] = [{ type: "thinking", thinking: "", signature: `sig-${i}` }];
       if (step.text) {
@@ -28,7 +30,7 @@ function scripted(turns: { text?: string; tools?: { name: string; input: unknown
       return { content, stop_reason: step.tools?.length ? "tool_use" : "end_turn" };
     },
   };
-  return { model, seen };
+  return { model, seen, systems };
 }
 
 const lines = (body: string) => body.trim().split("\n").map((l) => JSON.parse(l));
@@ -74,6 +76,19 @@ describe("il Concierge", () => {
     // Seconda battuta nella stessa conversazione: la storia continua
     await t.app.inject({ method: "POST", url: "/v1/concierge", payload: { text: "Grazie", sessionId } });
     expect((seen.at(-1) as unknown[]).length).toBe(9); // 8 della prima battuta + la nuova domanda
+  });
+
+  it("il Concierge sa se l'ospite ha fatto l'accesso, e chi è", async () => {
+    const { model, systems } = scripted([{ text: "Buonasera." }, { text: "Bentornata." }]);
+    t = await setupApp({ concierge: model });
+    const res = await t.app.inject({ method: "POST", url: "/v1/concierge", payload: { text: "Buonasera" } });
+    expect(systems[0]).toMatch(/not signed in/);
+    const a = await activeAccount(t, { subjectType: "PERSON", fiscalCode: "RSSMRA85T10A562S", sector: "PRIVATE" });
+    // Accedendo, la conversazione cominciata da ospite continua e passa al profilo
+    const sessionId = lines(res.body)[0].sessionId;
+    await t.app.inject({ method: "POST", url: "/v1/concierge", payload: { text: "Eccomi", sessionId }, cookies: { [SESSION_COOKIE]: a.cookie } });
+    expect(systems[1]).toMatch(/signed in as a private client; first name Giulia/);
+    expect((await t.app.inject({ method: "GET", url: `/v1/concierge/sessions/${sessionId}` })).statusCode).toBe(404);
   });
 
   it("una conversazione legata a un profilo non si apre da altri", async () => {
