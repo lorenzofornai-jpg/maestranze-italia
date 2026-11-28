@@ -10,6 +10,7 @@ import { AtelierService } from "./atelier/service";
 import { DiskMediaStore, MAX_IMAGE_BYTES, PrivateFiles, type MediaStore } from "./lib/media";
 import { LlmTranslator, NoTranslator, type Translator } from "./lib/translate";
 import { CallService } from "./atelier/calls";
+import { ConciergeService, LlmConciergeModel, NoConciergeModel, summarizeCommission, type ConciergeModel } from "./concierge/service";
 import { atelierRoutes, callRoutes } from "./routes/atelier";
 import { catalogRoutes } from "./routes/catalog";
 import { orderRoutes } from "./routes/orders";
@@ -47,6 +48,7 @@ export async function buildApp(opts: {
   interpreter?: Interpreter;
   payments?: PaymentProvider;
   translator?: Translator;
+  concierge?: ConciergeModel;
 }) {
   const { config } = opts;
   const app = Fastify({ logger: opts.logger ?? process.env.DEBUG_API === "1", trustProxy: true, bodyLimit: 64 * 1024 });
@@ -161,6 +163,44 @@ export async function buildApp(opts: {
   atelierRoutes(app, atelier, { requireSession, ctx, channelOf, strict });
   app.decorate("atelier", atelier);
   callRoutes(app, new CallService(opts.db, config, atelier, translator, opts.now), { requireSession });
+
+  // --- Il Concierge -----------------------------------------------------------------------------
+  const conciergeModel = opts.concierge ?? (process.env.ANTHROPIC_API_KEY && config.AI_SEARCH !== "off" ? new LlmConciergeModel() : new NoConciergeModel());
+  const concierge = new ConciergeService(opts.db, search, catalog, conciergeModel, opts.now);
+  const conciergeLimit = { config: { rateLimit: { max: config.NODE_ENV === "test" ? 10_000 : 12, timeWindow: "1 minute" } } };
+  app.get("/v1/concierge/status", async () => ({ enabled: concierge.enabled }));
+  app.get<{ Params: { id: string } }>("/v1/concierge/sessions/:id", { preHandler: optionalSession }, async (req) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw Errors.notFound();
+    return concierge.read(req.params.id, req.auth?.account);
+  });
+  app.get<{ Params: { id: string; draft: string } }>("/v1/concierge/sessions/:id/drafts/:draft", { preHandler: optionalSession }, async (req) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw Errors.notFound();
+    return concierge.draft(req.params.id, req.params.draft, req.auth?.account);
+  });
+  /** Risposta trasmessa riga per riga (NDJSON): il testo compare mentre il Concierge lo scrive. */
+  app.post("/v1/concierge", { ...conciergeLimit, preHandler: optionalSession }, async (req, reply) => {
+    const b = body(req);
+    if (!concierge.enabled) throw new ApiError(503, "CONCIERGE_UNAVAILABLE");
+    if (typeof b.text !== "string" || !b.text.trim()) throw Errors.validation({ text: "concierge.empty" });
+    reply.hijack();
+    reply.raw.writeHead(200, {
+      "content-type": "application/x-ndjson; charset=utf-8",
+      "cache-control": "no-cache, no-transform",
+      "x-accel-buffering": "no",
+    });
+    const write = (e: unknown) => reply.raw.write(`${JSON.stringify(e)}\n`);
+    try {
+      await concierge.converse(b, req.auth?.account, write);
+    } catch (err) {
+      write({ type: "error", code: err instanceof ApiError ? err.code : "CONCIERGE_UNAVAILABLE" });
+      if (!(err instanceof ApiError)) app.log.error(err);
+    }
+    reply.raw.end();
+  });
+  app.post<{ Params: { id: string } }>("/v1/commissions/:id/summary", { ...conciergeLimit, preHandler: requireSession }, async (req) => {
+    if (!/^[0-9a-f-]{36}$/i.test(req.params.id)) throw Errors.notFound();
+    return summarizeCommission(conciergeModel, atelier, req.auth!.account, req.params.id);
+  });
 
   // --- Esplorazione e ricerca -------------------------------------------------------------------
   app.get("/v1/maisons", async (req) => search.search(req.query));

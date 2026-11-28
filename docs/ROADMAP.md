@@ -8,6 +8,7 @@ Stato a novembre 2026. ✅ fatto · 🔜 prossimo · ◻️ da pianificare
 - ✅ Esplorazione per territorio e disciplina, ricerca full-text, frasi in linguaggio naturale
 - ✅ Ordini, autorizzazione forte del pagamento, custodia, accredito con commissione, rimborsi, controversie (fornitore *sandbox*)
 - ✅ SMS Twilio, push Expo, build EAS
+- ✅ **Il Concierge**: salotto con l'assistente LLM che consiglia le Maison e prepara il brief su misura
 - ✅ **Atelier: videochiamate con sottotitoli tradotti e appuntamenti nei due fusi orari**
 - ✅ **Atelier, primo passo (sartoria)**: brief guidato con misure, conversazione tradotta con dettatura e foto private, proposta con versioni, acconto e saldo in custodia, risposta entro 96 ore, avviso sui contatti esterni
 
@@ -98,8 +99,17 @@ Sì anche all'assistente di bottega **con la voce** (passo 3).
   verbale della chiamata salvato solo con il consenso di entrambi
 - ◻️ Squillo come notifica push sull'app; promemoria via email 1 ora prima dell'appuntamento; file .ics
 - ◻️ Interprete umano su richiesta per commissioni di valore; chiamate a più persone (es. sarto e modellista)
-- ◻️ **Il Concierge** (assistente LLM del portale): aiuta il cliente a scrivere il brief, suggerisce le Maison adatte,
-  riassume la conversazione; dichiara sempre di essere un assistente automatico
+- ✅ **Il Concierge** (pagina «Concierge», in testata e in home): un salotto in penombra dove l'assistente LLM
+  accoglie il cliente nella sua lingua (in italiano dà del Lei), cerca e legge le Maison vere del portale, ne
+  propone al massimo tre spiegando perché, e per la sartoria prepara la **bozza del brief** che il cliente apre già
+  compilata e invia lui; dichiara di essere un assistente automatico, non inventa Maison, prezzi o tempi.
+  Conversazione conservata sul server (anche per chi non ha un profilo), risposta che compare mentre la scrive
+- ✅ **Il punto del Concierge** nell'Atelier: riassunto della commissione (cosa si fa, cosa è deciso, cosa resta
+  aperto, il prossimo passo) nella lingua di chi legge
+- ◻️ Concierge: memoria delle preferenze del cliente tra una visita e l'altra (con consenso); presentazione diretta
+  a una Maison («Le scrivo io al maestro?»); ordini dal catalogo preparati nel carrello; voce (passo 3)
+- ◻️ Concierge: insieme di domande d'esempio per misurarne la qualità (tono, Maison giuste, niente invenzioni)
+  prima del lancio, e limite di spesa giornaliero sulle chiamate all'LLM
 
 **Passo 3**
 - ◻️ **Assistenti di bottega** (LLM per singola Maison, su contenuti approvati dalla Maison), **anche con la voce**:

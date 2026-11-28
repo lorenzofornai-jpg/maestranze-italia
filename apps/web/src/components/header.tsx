@@ -35,7 +35,7 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
   const pathname = usePathname() ?? "";
   const onHome = /^\/(it|en)\/?$/.test(pathname);
   /** Voce della pagina in cui ci si trova: Le Arti, Territori, Le Maison (esplorazione e singole Maison). */
-  const current = (key: "arti" | "territori" | "maisons") => {
+  const current = (key: "arti" | "territori" | "maisons" | "concierge") => {
     const re = key === "maisons" ? /^\/(it|en)\/(esplora|maison)(\/|$)/ : new RegExp(`^/(it|en)/${key}(/|$)`);
     return re.test(pathname) ? "true" : undefined;
   };
@@ -72,6 +72,9 @@ export function Header({ overlay = false, signedIn = false, dark = false }: { ov
           </Link>
           <Link href={`/${locale}/maison`} aria-current={current("maisons")}>
             {t("nav.maisons")}
+          </Link>
+          <Link href={`/${locale}/concierge`} aria-current={current("concierge")}>
+            {t("nav.concierge")}
           </Link>
         </nav>
         <Wordmark locale={locale} />
@@ -142,7 +145,7 @@ export function Footer() {
         <nav className="footer-links">
           <Link href={`/${locale}/registrati`}>{t("nav.request")}</Link>
           <Link href={`/${locale}/accedi`}>{t("nav.signin")}</Link>
-          <a href="mailto:concierge@maestranze.it">{t("footer.concierge")}</a>
+          <Link href={`/${locale}/concierge`}>{t("footer.concierge")}</Link>
         </nav>
         <nav className="footer-links">
           <a href="#">{t("footer.terms")}</a>

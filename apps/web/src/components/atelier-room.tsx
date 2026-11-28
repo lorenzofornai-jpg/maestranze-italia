@@ -14,6 +14,7 @@ import {
   type ProposalView,
 } from "@maestranze/shared";
 import { Field } from "@/components/auth-shell";
+import { Prose } from "@/components/concierge-room";
 import { ContactWarning, countryName, sortedCountries, useDictation } from "@/components/atelier-bits";
 import { api, ApiFailure, errorMessage, toCents, uploadFile } from "@/lib/api";
 import { useLocale, useT } from "@/lib/i18n-client";
@@ -180,6 +181,58 @@ function Composer({ c, onChange }: { c: CommissionView; onChange: (c: Commission
   );
 }
 
+/** Il punto del Concierge: riassunto della commissione nella lingua di chi legge. */
+function ConciergeNotes({ c }: { c: CommissionView }) {
+  const t = useT();
+  const [enabled, setEnabled] = useState(false);
+  const [state, setState] = useState<"idle" | "loading" | "shown">("idle");
+  const [text, setText] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  useEffect(() => {
+    fetch("/api/v1/concierge/status")
+      .then((r) => r.json())
+      .then((r) => setEnabled(!!r.enabled))
+      .catch(() => {});
+  }, []);
+  if (!enabled || c.messages.filter((m) => m.kind === "TEXT").length < 2) return null;
+  const load = async () => {
+    setState("loading");
+    setError(null);
+    try {
+      setText((await api<{ text: string }>(`/commissions/${c.id}/summary`, { body: {} })).text);
+      setState("shown");
+    } catch (err) {
+      setError(errorMessage(t, err));
+      setState("idle");
+    }
+  };
+  return (
+    <>
+      {state === "idle" && (
+        <button type="button" className="tr-toggle" onClick={load}>
+          {t("cg.summary")}
+        </button>
+      )}
+      {state === "loading" && <p className="small italic" style={{ margin: 0 }}>{t("cg.summary.loading")}</p>}
+      {state === "shown" && (
+        <div className="cg-summary rise">
+          <span className="cg-who">{t("cg.summary")}</span>
+          <div className="cg-prose">
+            <Prose text={text} />
+          </div>
+          <div className="cg-summary-foot">
+            <span>{t("cg.summary.note")}</span>
+            <button type="button" onClick={() => setState("idle")}>
+              {t("cg.summary.close")}
+            </button>
+          </div>
+        </div>
+      )}
+      {error && <p className="notice error">{error}</p>}
+    </>
+  );
+}
+
 export function Conversation({ c, onChange, onCall }: { c: CommissionView; onChange: (c: CommissionView) => void; onCall: () => void }) {
   const t = useT();
   const locale = useLocale();
@@ -213,6 +266,7 @@ export function Conversation({ c, onChange, onCall }: { c: CommissionView; onCha
             ? t("at.languages.same", { lang: languageName(theirs) })
             : t("at.languages", { mine: languageName(c.viewerLanguage), other, theirs: languageName(theirs) })}
         </p>
+        <ConciergeNotes c={c} />
       </div>
       <ol className="messages">
         {c.messages.map((m) => (

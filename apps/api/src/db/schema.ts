@@ -595,6 +595,27 @@ export const commissionAppointments = pgTable(
   (t) => [index("commission_appointments_idx").on(t.commissionId, t.startsAt)],
 );
 
+/** Il Concierge: conversazioni con l'assistente del portale (anche per chi non ha ancora un profilo). */
+export const conciergeSessions = pgTable(
+  "concierge_sessions",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    accountId: uuid("account_id").references(() => accounts.id, { onDelete: "set null" }),
+    locale: text("locale").notNull().default("it"),
+    /** Storia completa per il modello (blocchi restituiti dall'API, invariati). */
+    history: jsonb("history").$type<unknown[]>().notNull().default([]),
+    /** Ciò che la pagina mostra: battute, schede delle Maison, bozze di brief. */
+    display: jsonb("display").$type<unknown[]>().notNull().default([]),
+    /** Bozze di brief su misura preparate dal Concierge, per identificativo. */
+    drafts: jsonb("drafts").$type<Record<string, unknown>>().notNull().default({}),
+    turns: integer("turns").notNull().default(0),
+    createdAt: ts("created_at").notNull().defaultNow(),
+    updatedAt: ts("updated_at").notNull().defaultNow(),
+  },
+  (t) => [index("concierge_sessions_account_idx").on(t.accountId)],
+);
+
+export type ConciergeSession = typeof conciergeSessions.$inferSelect;
 export type CommissionCall = typeof commissionCalls.$inferSelect;
 export type CommissionAppointment = typeof commissionAppointments.$inferSelect;
 export type Commission = typeof commissions.$inferSelect;

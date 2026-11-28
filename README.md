@@ -74,7 +74,7 @@ App mobile: vedi [`docs/TEST-SU-TELEFONO.md`](docs/TEST-SU-TELEFONO.md).
 ## Test
 
 ```bash
-pnpm test        # 72 test: accesso e 2FA, catalogo e selezione, ricerca, ordini e pagamenti, Atelier, canali SMS/push
+pnpm test        # 75 test: accesso e 2FA, catalogo e selezione, ricerca, ordini e pagamenti, Atelier, Concierge, canali SMS/push
 pnpm typecheck
 ```
 

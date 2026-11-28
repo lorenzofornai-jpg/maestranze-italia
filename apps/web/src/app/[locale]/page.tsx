@@ -44,6 +44,9 @@ export default async function Home({ params }: { params: Promise<{ locale: strin
                 <Link href={`/${locale}/arti`} className="link">
                   {t("hero.cta.discover")}
                 </Link>
+                <Link href={`/${locale}/concierge`} className="link italic hero-concierge">
+                  {t("hero.cta.concierge")}
+                </Link>
               </div>
             </div>
             <figure className="hero-plate fade" style={{ animationDelay: "300ms" }}>

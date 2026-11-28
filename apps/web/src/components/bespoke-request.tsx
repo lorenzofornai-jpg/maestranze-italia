@@ -12,6 +12,7 @@ import {
   GARMENTS,
   MEASUREMENTS,
   OCCASIONS,
+  type ConciergeDraft,
   type ContactKind,
   type SessionUser,
 } from "@maestranze/shared";
@@ -56,6 +57,35 @@ export function BespokeRequest({ maison }: { maison: { id: string; slug: string;
       .then((r) => setUser(r.user))
       .catch(() => setUser(null));
   }, []);
+
+  // Bozza preparata dal Concierge: si riprende nel modulo, il cliente la rivede e la invia lui.
+  const [fromConcierge, setFromConcierge] = useState(false);
+  useEffect(() => {
+    const q = new URLSearchParams(window.location.search);
+    const draft = q.get("bozza");
+    const session = q.get("conversazione");
+    if (!draft || !session) return;
+    fetch(`/api/v1/concierge/sessions/${encodeURIComponent(session)}/drafts/${encodeURIComponent(draft)}`, { credentials: "same-origin" })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d: ConciergeDraft | null) => {
+        if (!d || d.maison.slug !== maison.slug) return;
+        const b = d.brief;
+        setBrief((cur) => ({
+          ...cur,
+          garment: b.garment ?? cur.garment,
+          occasion: b.occasion ?? cur.occasion,
+          fabric: b.fabric ?? cur.fabric,
+          colour: b.colour ?? cur.colour,
+          description: b.description ?? cur.description,
+          budget: b.budget ?? cur.budget,
+          neededBy: b.neededBy ?? cur.neededBy,
+          country: b.country ?? cur.country,
+        }));
+        if (d.language) setLanguage(d.language);
+        setFromConcierge(true);
+      })
+      .catch(() => {});
+  }, [maison.slug]);
 
   // Paese suggerito dalla lingua del browser (es. en-US → Stati Uniti), modificabile.
   useEffect(() => {
@@ -144,6 +174,7 @@ export function BespokeRequest({ maison }: { maison: { id: string; slug: string;
         <span className="eyebrow">{t("req.eyebrow", { maison: maison.name })}</span>
         <h1 className="display h2">{t("req.title")}</h1>
         <p className="lead">{t("req.lead")}</p>
+        {fromConcierge && <p className="notice">{t("req.from_concierge")}</p>}
       </header>
 
       <ol className="bespoke-steps" aria-label={t("req.title")}>

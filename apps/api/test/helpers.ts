@@ -14,7 +14,7 @@ const TEST_DB = process.env.TEST_DATABASE_URL ?? "postgres://maestranze:maestran
 
 export const WEB = "http://localhost:3000";
 
-export async function setupApp() {
+export async function setupApp(extra: { concierge?: import("../src/concierge/service").ConciergeModel } = {}) {
   const config: Config = {
     NODE_ENV: "test",
     PORT: 0,
@@ -33,13 +33,13 @@ export async function setupApp() {
   };
   const { db, pool } = createDb(TEST_DB);
   await pool.query(
-    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries, commissions, commission_messages, commission_proposals, commission_calls, call_signals, commission_appointments cascade",
+    "truncate accounts, email_tokens, devices, mfa_factors, auth_challenges, device_pairings, device_nonces, sessions, audit_events, maisons, products, orders, order_items, order_events, ledger_entries, commissions, commission_messages, commission_proposals, commission_calls, call_signals, commission_appointments, concierge_sessions cascade",
   );
   const notifier = new MemoryNotifier();
   const clock = { offsetMs: 0 };
   const payments = new SandboxPaymentProvider();
   const translator = new FakeTranslator();
-  const app = await buildApp({ db, config, notifier, payments, translator, now: () => new Date(Date.now() + clock.offsetMs) });
+  const app = await buildApp({ db, config, notifier, payments, translator, concierge: extra.concierge, now: () => new Date(Date.now() + clock.offsetMs) });
   return { app, notifier, clock, pool, payments, translator, close: async () => (await app.close(), await pool.end()) };
 }
 

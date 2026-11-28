@@ -121,6 +121,17 @@
   background: var(--ink);
   color: var(--paper);
 }
+/* Quattro voci a sinistra: su iPad orizzontale e schermi medi si stringono un poco. */
+@media (max-width: 1320px) {
+  .header-nav.left {
+    gap: 22px;
+    font-size: 11.5px;
+    letter-spacing: 0.2em;
+  }
+  .header-nav.right {
+    gap: 24px;
+  }
+}
 @media (max-width: 900px) {
   .header-nav.left {
     display: none;

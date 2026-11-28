@@ -9,6 +9,7 @@ import "../globals.css";
 import "../site.css";
 import "../catalog.css";
 import "../atelier.css";
+import "../concierge.css";
 import type { Metadata, Viewport } from "next";
 import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
