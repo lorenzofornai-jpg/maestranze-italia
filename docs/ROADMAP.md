@@ -104,6 +104,10 @@ Sì anche all'assistente di bottega **con la voce** (passo 3).
   propone al massimo tre spiegando perché, e per la sartoria prepara la **bozza del brief** che il cliente apre già
   compilata e invia lui; dichiara di essere un assistente automatico, non inventa Maison, prezzi o tempi.
   Conversazione conservata sul server (anche per chi non ha un profilo), risposta che compare mentre la scrive
+- ✅ **La presenza del Concierge**: un campanello d'ottone quando attende; quando la conversazione inizia suona e
+  lascia il posto al Concierge in persona (ritratto a linee, inchino all'arrivo, annuisce mentre scrive), che resta
+  in un cerchio in basso a sinistra su tutte le pagine e apre la conversazione in un pannello laterale; congedato,
+  o dopo 30 minuti di silenzio, torna il campanello
 - ✅ **Il punto del Concierge** nell'Atelier: riassunto della commissione (cosa si fa, cosa è deciso, cosa resta
   aperto, il prossimo passo) nella lingua di chi legge
 - ◻️ Concierge: memoria delle preferenze del cliente tra una visita e l'altra (con consenso); presentazione diretta

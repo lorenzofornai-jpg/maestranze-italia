@@ -4,9 +4,9 @@ import Link from "next/link";
 import { Fragment, useEffect, useRef, useState, type ReactNode } from "react";
 import { pick, type ConciergeEvent, type ConciergeItem } from "@maestranze/shared";
 import { useLocale, useT } from "@/lib/i18n-client";
-import { ConciergeEmblem } from "@/components/concierge-emblem";
+import { ConciergeFigure, ConciergeSigil } from "@/components/concierge-emblem";
+import { activeConciergeSession, conciergeArrive, conciergeLeave } from "@/lib/concierge-presence";
 
-const STORE = "mi_concierge";
 
 /** Testo del Concierge: paragrafi, e il grassetto con **…** se lo usa. */
 export function Prose({ text }: { text: string }) {
@@ -40,7 +40,7 @@ function Item({ item, sessionId }: { item: ConciergeItem; sessionId: string | nu
     return (
       <li className="cg-line">
         <span className="cg-who">
-          <ConciergeEmblem size={22} />
+          <ConciergeFigure size={24} />
           {t("cg.name")}
         </span>
         <div className="cg-prose" dir="auto">
@@ -121,7 +121,7 @@ function Item({ item, sessionId }: { item: ConciergeItem; sessionId: string | nu
  * Il salotto del Concierge: una stanza scura e calda, la conversazione scritta come in una lettera,
  * le schede delle botteghe e le bozze di richiesta che compaiono mentre il Concierge le prepara.
  */
-export function ConciergeRoom() {
+export function ConciergeRoom({ compact = false, onClose }: { compact?: boolean; onClose?: () => void }) {
   const t = useT();
   const locale = useLocale();
   const [enabled, setEnabled] = useState<boolean | null>(null);
@@ -132,16 +132,6 @@ export function ConciergeRoom() {
   const [text, setText] = useState("");
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [hour, setHour] = useState<number | null>(null);
-  // Il campanello suona una volta all'arrivo.
-  const [greetRing, setGreetRing] = useState(false);
-  useEffect(() => {
-    const on = setTimeout(() => setGreetRing(true), 700);
-    const off = setTimeout(() => setGreetRing(false), 2600);
-    return () => {
-      clearTimeout(on);
-      clearTimeout(off);
-    };
-  }, []);
   const end = useRef<HTMLDivElement>(null);
   const input = useRef<HTMLTextAreaElement>(null);
 
@@ -151,10 +141,8 @@ export function ConciergeRoom() {
       .then((r) => r.json())
       .then((r) => setEnabled(!!r.enabled))
       .catch(() => setEnabled(false));
-    let saved: string | null = null;
-    try {
-      saved = localStorage.getItem(STORE);
-    } catch {}
+    // Si riprende la conversazione solo se il Concierge è ancora con il cliente.
+    const saved = activeConciergeSession();
     if (saved) {
       fetch(`/api/v1/concierge/sessions/${saved}`, { credentials: "same-origin" })
         .then((r) => (r.ok ? r.json() : null))
@@ -212,9 +200,7 @@ export function ConciergeRoom() {
           const e = JSON.parse(line) as ConciergeEvent;
           if (e.type === "session") {
             setSessionId(e.sessionId);
-            try {
-              localStorage.setItem(STORE, e.sessionId);
-            } catch {}
+            conciergeArrive(e.sessionId);
           } else if (e.type === "text") {
             buffer += e.delta;
             setLive(buffer);
@@ -239,9 +225,7 @@ export function ConciergeRoom() {
   };
 
   const restart = () => {
-    try {
-      localStorage.removeItem(STORE);
-    } catch {}
+    conciergeLeave();
     setItems([]);
     setSessionId(null);
     setNotice(null);
@@ -251,16 +235,35 @@ export function ConciergeRoom() {
   const empty = items.length === 0 && !live;
 
   return (
-    <div className={`cg-room ${empty ? "empty" : ""}`}>
-      <header className="cg-welcome">
-        <span className="cg-mark">
-          <ConciergeEmblem size={54} ring={greetRing} />
-        </span>
-        <span className="eyebrow">{t("cg.eyebrow")}</span>
-        <h1 className="display cg-greeting">{greeting || " "}</h1>
-        <p className="cg-intro">{t("cg.intro")}</p>
-        <p className="cg-disclosure">{t("cg.disclosure")}</p>
-      </header>
+    <div className={`cg-room ${empty ? "empty" : ""} ${compact ? "compact" : ""}`}>
+      {compact ? (
+        <header className="cg-drawer-head">
+          <span className="cg-mark small">
+            <ConciergeSigil present writing={busy} size={40} />
+          </span>
+          <span className="cg-drawer-title">
+            <span className="display">{t("cg.name")}</span>
+            <span className="cg-disclosure">{t("cg.disclosure")}</span>
+          </span>
+          {onClose && (
+            <button type="button" className="cg-close" onClick={onClose} aria-label={t("cg.summary.close")}>
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          )}
+        </header>
+      ) : (
+        <header className="cg-welcome">
+          <span className="cg-mark">
+            <ConciergeSigil present={!empty} writing={busy} size={58} />
+          </span>
+          <span className="eyebrow">{t("cg.eyebrow")}</span>
+          <h1 className="display cg-greeting">{greeting || "\u00a0"}</h1>
+          <p className="cg-intro">{t("cg.intro")}</p>
+          <p className="cg-disclosure">{t("cg.disclosure")}</p>
+        </header>
+      )}
 
       {enabled === false && <p className="cg-notice">{t("cg.unavailable")}</p>}
 
@@ -272,7 +275,7 @@ export function ConciergeRoom() {
           {live && (
             <li className="cg-line">
               <span className="cg-who">
-                <ConciergeEmblem size={22} ring />
+                <ConciergeFigure size={24} mood="writing" />
                 {t("cg.name")}
               </span>
               <div className="cg-prose" dir="auto">
@@ -282,7 +285,7 @@ export function ConciergeRoom() {
           )}
           {busy && !live && (
             <li className="cg-writing">
-              <ConciergeEmblem size={30} ring />
+              <ConciergeFigure size={32} mood="writing" />
               <span>{t("cg.writing")}</span>
             </li>
           )}
@@ -341,7 +344,7 @@ export function ConciergeRoom() {
 
       {!empty && (
         <button type="button" className="cg-restart" onClick={restart}>
-          {t("cg.new")}
+          {t("cg.leave")}
         </button>
       )}
     </div>

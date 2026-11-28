@@ -15,6 +15,7 @@ import { notFound } from "next/navigation";
 import type { ReactNode } from "react";
 import { isLocale, translate } from "@/lib/i18n";
 import { LocaleProvider } from "@/lib/i18n-client";
+import { ConciergeDock } from "@/components/concierge-dock";
 
 export function generateStaticParams() {
   return [{ locale: "it" }, { locale: "en" }];
@@ -38,7 +39,10 @@ export default async function LocaleLayout({ children, params }: { children: Rea
   return (
     <html lang={locale}>
       <body>
-        <LocaleProvider locale={locale}>{children}</LocaleProvider>
+        <LocaleProvider locale={locale}>
+          {children}
+          <ConciergeDock />
+        </LocaleProvider>
       </body>
     </html>
   );
